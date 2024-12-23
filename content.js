@@ -46,7 +46,7 @@ function addAiButton() {
         zIndex: "10000",
     });
 
-    assistantButton.addEventListener("click", clickHandler);
+    assistantButton.addEventListener("click", toggleChatbox);
 
     document.body.appendChild(assistantButton);
 }
@@ -63,56 +63,142 @@ function handleRouteChange() {
         addAiButton();
     } else {
         removeAiButton();
+        removeChatbox();
     }
 }
 
-function getIdFromUrl(url) {
-    const parsedUrl = new URL(url);
-    const pathSegments = parsedUrl.pathname.split("/");
-    return pathSegments[pathSegments.length - 1];
+function toggleChatbox() {
+    if (document.getElementById('ai-chatbox')) {
+        removeChatbox();
+    } else {
+        createChatbox();
+    }
 }
 
-function clickHandler() {
-    const proburl = window.location.href;
-    const id = getIdFromUrl(proburl);
-    const problemName = document.getElementsByClassName('problem_heading')[0]?.textContent || '';
-    const limits = document.getElementsByClassName('problem_paragraph');
-    const timeLimit = limits[2]?.textContent || '';
-    const memoryLimit = limits[4]?.textContent || '';
-    const desc = document.getElementsByClassName('coding_desc__pltWY')[0]?.textContent || '';
+function createChatbox() {
+    const chatbox = document.createElement("div");
+    chatbox.id = "ai-chatbox";
 
-    const inOutConst = document.getElementsByClassName('coding_input_format__pv9fS');
-    const input_format = inOutConst[0]?.textContent || '';
-    const output_format = inOutConst[1]?.textContent || '';
-    const constraints = inOutConst[2]?.textContent || '';
-    const input = inOutConst[3]?.textContent || '';
-    const ouput = inOutConst[4]?.textContent || '';
+    Object.assign(chatbox.style, {
+        position: "fixed",
+        bottom: "80px",
+        left: "20px",
+        width: "300px",
+        height: "400px",
+        backgroundColor: "#fff",
+        border: "1px solid #ccc",
+        borderRadius: "10px",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: "10001",
+    });
 
-    const code = document.getElementsByClassName('view-lines monaco-mouse-cursor-text')[0]?.textContent || '';
+    // Chat messages container
+    const messagesContainer = document.createElement("div");
+    messagesContainer.id = "messages-container";
+    Object.assign(messagesContainer.style, {
+        flex: "1",
+        overflowY: "auto",
+        padding: "10px",
+    });
 
-    const data = {
-        id: id,
-        problemName: problemName,
-        timeLimit: timeLimit,
-        memoryLimit: memoryLimit,
-        description: desc,
-        inputFormat: input_format,
-        outputFormat: output_format,
-        constraints: constraints,
-        sampleInput: input,
-        sampleOutput: ouput,
-        code: code
-    };
+    // Chat input
+    const inputContainer = document.createElement("div");
+    Object.assign(inputContainer.style, {
+        display: "flex",
+        padding: "10px",
+        borderTop: "1px solid #ccc",
+    });
 
-    const bookmarkObj = {
-        id: id,
-        name: problemName,
-        url: proburl
-    };
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "chat-input";
+    Object.assign(input.style, {
+        flex: "1",
+        padding: "5px",
+        borderRadius: "5px",
+        border: "1px solid #ccc",
+    });
 
-    console.log(data);
+    const sendButton = document.createElement("button");
+    sendButton.id = "send-button";
+    sendButton.textContent = "Send";
+    Object.assign(sendButton.style, {
+        marginLeft: "5px",
+        padding: "5px 10px",
+        borderRadius: "5px",
+        border: "none",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        cursor: "pointer",
+    });
+
+    sendButton.addEventListener("click", handleSendMessage);
+
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(sendButton);
+
+    chatbox.appendChild(messagesContainer);
+    chatbox.appendChild(inputContainer);
+
+    document.body.appendChild(chatbox);
 }
 
-function getCurrentBookmarks() {
-    chrome.storage.sync;
+function removeChatbox() {
+    const chatbox = document.getElementById('ai-chatbox');
+    if (chatbox) {
+        chatbox.remove();
+    }
+}
+
+async function handleSendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    appendMessage("You", message);
+
+    input.value = "";
+
+    // Process the message with Gemini API
+    const response = await processMessageWithGeminiAPI(message);
+
+    if (response) {
+        appendMessage("AI", response);
+    } else {
+        appendMessage("AI", "Sorry, I couldn't process your request.");
+    }
+}
+
+function appendMessage(sender, message) {
+    const messagesContainer = document.getElementById('messages-container');
+    const messageDiv = document.createElement("div");
+    messageDiv.textContent = `${sender}: ${message}`;
+    Object.assign(messageDiv.style, {
+        padding: "5px",
+        margin: "5px 0",
+        borderRadius: "5px",
+        backgroundColor: sender === "You" ? "#f1f1f1" : "#e0f7fa",
+        alignSelf: sender === "You" ? "flex-start" : "flex-end",
+    });
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom
+}
+
+async function processMessageWithGeminiAPI(message) {
+    try {
+        const response = await fetch("https://api.gemini.example/endpoint", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query: message }),
+        });
+        const data = await response.json();
+        return data.response || "No response received.";
+    } catch (error) {
+        console.error("Error processing message:", error);
+        return null;
+    }
 }
