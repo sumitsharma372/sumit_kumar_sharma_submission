@@ -245,7 +245,30 @@ async function handleSendMessage() {
 function appendMessage(sender, message, container = null) {
     const messagesContainer = container || document.getElementById('messages-container');
     const messageDiv = document.createElement("div");
-    messageDiv.textContent = `${sender}: ${message}`;
+
+    // Format code blocks
+    message = message.replace(/```([^`]+)```/g, '<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">$1</pre>'); // for multi-line code blocks
+    message = message.replace(/`([^`]+)`/g, '<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">$1</code>'); // for inline code
+
+    // Format bold text
+    message = message.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Format italic text
+    message = message.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Format headings
+    message = message.replace(/^(#{1,6})\s*(.*)$/gm, (match, hash, text) => {
+        const level = hash.length;
+        return `<h${level}>${text}</h${level}>`;
+    });
+
+    // Handle line breaks (newlines to <br> tags)
+    message = message.replace(/\n/g, '<br>');
+
+    // Add sender and message content
+    messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+
+    // Apply styling based on sender
     Object.assign(messageDiv.style, {
         padding: "5px",
         margin: "5px 0",
@@ -253,9 +276,11 @@ function appendMessage(sender, message, container = null) {
         backgroundColor: sender === "You" ? "#f1f1f1" : "#e0f7fa",
         alignSelf: sender === "You" ? "flex-start" : "flex-end",
     });
+
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom
 }
+
 
 
 async function processMessageWithGeminiAPI(chatHistory, apiKey) {
