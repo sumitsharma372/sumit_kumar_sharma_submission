@@ -1,0 +1,13 @@
+# macOS system files
+**/.DS_Store
+
+# Log files
+*.log
+
+# Build output 
+dist/
+build/
+
+# Environment files
+.env
+.env.local
