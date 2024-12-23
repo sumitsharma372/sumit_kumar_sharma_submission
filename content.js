@@ -79,12 +79,14 @@ function createChatbox() {
     const chatbox = document.createElement("div");
     chatbox.id = "ai-chatbox";
 
+    // Initial styling of chatbox
     Object.assign(chatbox.style, {
         position: "fixed",
         bottom: "80px",
         left: "20px",
-        width: "300px",
-        height: "400px",
+        width: "400px",
+        height: "700px",
+        paddingTop: "5px",
         backgroundColor: "#fff",
         border: "1px solid #ccc",
         borderRadius: "10px",
@@ -93,6 +95,32 @@ function createChatbox() {
         flexDirection: "column",
         zIndex: "10001",
     });
+
+    // Top-right corner draggable area
+    const dragArea = document.createElement("div");
+    dragArea.id = "drag-area";
+    Object.assign(dragArea.style, {
+        position: "absolute",
+        top: "0",
+        left: "50%", // Set left to 50% to position it at the center
+        width: "30px",
+        height: "25px",
+        cursor: "grab", // Set cursor to grab in this area
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transform: "translateX(-50%)", // Adjust position by 50% of the element's width
+    });
+    
+
+    // Add a drag indicator image
+    const dragImage = document.createElement("img");
+    dragImage.src = chrome.runtime.getURL("assets/drag.png"); // Set to your image path
+    dragImage.alt = "Drag";
+    dragImage.style.width = "10px"; // Adjust image size
+    dragImage.style.height = "10px"; // Adjust image size
+
+    dragArea.appendChild(dragImage);
 
     // Chat messages container
     const messagesContainer = document.createElement("div");
@@ -139,6 +167,15 @@ function createChatbox() {
         cursor: "pointer",
     });
 
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && document.activeElement === input && input.value.trim() !== "") {
+            handleSendMessage(); 
+            input.value = "";
+        }
+    });
+
+    
+
     sendButton.addEventListener("click", handleSendMessage);
 
     inputContainer.appendChild(input);
@@ -146,9 +183,34 @@ function createChatbox() {
 
     chatbox.appendChild(messagesContainer);
     chatbox.appendChild(inputContainer);
+    chatbox.appendChild(dragArea); // Add the draggable area
 
     document.body.appendChild(chatbox);
+
+    // Implementing drag functionality
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    dragArea.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        offsetX = e.clientX - chatbox.getBoundingClientRect().left;
+        offsetY = e.clientY - chatbox.getBoundingClientRect().top;
+        chatbox.style.cursor = "grabbing"; // Change cursor to grabbing when dragging
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+            chatbox.style.left = `${e.clientX - offsetX}px`;
+            chatbox.style.top = `${e.clientY - offsetY}px`;
+        }
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        chatbox.style.cursor = "default"; // Revert cursor to default when not dragging
+    });
 }
+
 
 
 function removeChatbox() {

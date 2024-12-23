@@ -27,7 +27,8 @@
         "assets/bookmark.png",
         "assets/play.png",
         "assets/delete.png",
-        "assets/icon.png"
+        "assets/icon.png",
+        "assets/drag.png"
       ],
       "matches" : ["<all_urls>"]
     }
@@ -40,5 +41,8 @@
     },
     "default_popup": "popup.html",
     "default_title": "A tooltip popup description when you hover over the Chrome Extension icon."
-  }
+  },
+  "host_permissions": [
+    "https://cdn.jsdelivr.net/"
+  ]
 }
