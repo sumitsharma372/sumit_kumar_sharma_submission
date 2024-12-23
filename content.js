@@ -103,6 +103,11 @@ function createChatbox() {
         padding: "10px",
     });
 
+    // Repopulate chat history
+    chatHistory.forEach(({ sender, text }) => {
+        appendMessage(sender, text, messagesContainer);
+    });
+
     // Chat input
     const inputContainer = document.createElement("div");
     Object.assign(inputContainer.style, {
@@ -145,6 +150,7 @@ function createChatbox() {
     document.body.appendChild(chatbox);
 }
 
+
 function removeChatbox() {
     const chatbox = document.getElementById('ai-chatbox');
     if (chatbox) {
@@ -174,8 +180,8 @@ async function handleSendMessage() {
     }
 }
 
-function appendMessage(sender, message) {
-    const messagesContainer = document.getElementById('messages-container');
+function appendMessage(sender, message, container = null) {
+    const messagesContainer = container || document.getElementById('messages-container');
     const messageDiv = document.createElement("div");
     messageDiv.textContent = `${sender}: ${message}`;
     Object.assign(messageDiv.style, {
@@ -188,6 +194,7 @@ function appendMessage(sender, message) {
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom
 }
+
 
 async function processMessageWithGeminiAPI(chatHistory, apiKey) {
     try {
