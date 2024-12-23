@@ -28,7 +28,8 @@
         "assets/play.png",
         "assets/delete.png",
         "assets/icon.png",
-        "assets/drag.png"
+        "assets/drag.png",
+        "assets/send.png"
       ],
       "matches" : ["<all_urls>"]
     }

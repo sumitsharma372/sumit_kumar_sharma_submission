@@ -84,9 +84,9 @@ function createChatbox() {
         position: "fixed",
         bottom: "80px",
         left: "20px",
-        width: "400px",
-        height: "700px",
-        paddingTop: "5px",
+        width: "500px",
+        height: "800px",
+        // paddingTop: "5px",
         backgroundColor: "#fff",
         border: "1px solid #ccc",
         borderRadius: "10px",
@@ -129,6 +129,7 @@ function createChatbox() {
         flex: "1",
         overflowY: "auto",
         padding: "10px",
+        marginTop: "18px"
     });
 
     // Repopulate chat history
@@ -144,35 +145,60 @@ function createChatbox() {
         borderTop: "1px solid #ccc",
     });
 
-    const input = document.createElement("input");
-    input.type = "text";
+    const input = document.createElement("textarea");
     input.id = "chat-input";
+    input.placeholder = "Type your message here...";
     Object.assign(input.style, {
         flex: "1",
         padding: "5px",
         borderRadius: "5px",
-        border: "1px solid #ccc",
+        border: "1px solid #e0f7fa",
+        resize: "none",
+        outline: "2px solid #e0f7fa",
     });
+
 
     const sendButton = document.createElement("button");
     sendButton.id = "send-button";
-    sendButton.textContent = "Send";
+
+    // Create an image element
+    const img = document.createElement("img");
+    img.src = chrome.runtime.getURL("assets/send.png"); // Ensure the path to the image is correct
+    img.alt = "Send"; // Alt text for the image
+    img.style.width = "40px"; // Adjust image size if needed
+    img.style.height = "30px"; // Adjust image size if needed
+
+    // Append the image to the button
+    sendButton.appendChild(img);
+
     Object.assign(sendButton.style, {
         marginLeft: "5px",
         padding: "5px 10px",
         borderRadius: "5px",
         border: "none",
-        backgroundColor: "#007bff",
+        // backgroundColor: "#007bff",
         color: "#fff",
         cursor: "pointer",
+        display: "flex", // Use flexbox to align the image
+        justifyContent: "center", // Center the image
+        alignItems: "center", // Center the image vertically
     });
 
+
     input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && document.activeElement === input && input.value.trim() !== "") {
+        // Check if Enter is pressed without Shift
+        if (e.key === "Enter" && !e.shiftKey && document.activeElement === input && input.value.trim() !== "") {
             handleSendMessage(); 
-            input.value = "";
+            input.value = ""; // Clear the input after sending the message
+            e.preventDefault(); // Prevent default behavior of Enter key (new line or form submit)
+        }
+        // Allow Shift + Enter to create a new line
+        else if (e.key === "Enter" && e.shiftKey) {
+            e.preventDefault(); // Prevent default behavior (submit form or other actions)
+            input.value += "\n"; // Add a newline character
         }
     });
+    
 
     
 
@@ -246,39 +272,117 @@ function appendMessage(sender, message, container = null) {
     const messagesContainer = container || document.getElementById('messages-container');
     const messageDiv = document.createElement("div");
 
-    // Format code blocks
-    message = message.replace(/```([^`]+)```/g, '<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">$1</pre>'); // for multi-line code blocks
-    message = message.replace(/`([^`]+)`/g, '<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">$1</code>'); // for inline code
+    // Escape HTML to prevent breaking HTML structure inside code blocks
+    function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, (char) => {
+            switch (char) {
+                case '&': return '&amp;';
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '"': return '&quot;';
+                case "'": return '&#39;';
+                default: return char;
+            }
+        });
+    }
 
-    // Format bold text
-    message = message.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // If the sender is "You", skip formatting and just preserve code blocks as is
+    if (sender === "You") {
+        message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
+            const escapedCode = escapeHtml(codeBlock);
+            return `<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+        });
 
-    // Format italic text
-    message = message.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
+            const escapedCode = escapeHtml(inlineCode);
+            return `<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+        });
 
-    // Format headings
-    message = message.replace(/^(#{1,6})\s*(.*)$/gm, (match, hash, text) => {
-        const level = hash.length;
-        return `<h${level}>${text}</h${level}>`;
-    });
+        // Handle line breaks for "You" (newlines to <br> tags)
+        message = message.replace(/\n/g, '<br>');
+    } else {
+        // Format code blocks (for other senders)
+        message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
+            const escapedCode = escapeHtml(codeBlock);
+            return `<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+        });
 
-    // Handle line breaks (newlines to <br> tags)
-    message = message.replace(/\n/g, '<br>');
+        message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
+            const escapedCode = escapeHtml(inlineCode);
+            return `<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+        });
+
+        // Prevent headings inside code blocks by temporarily replacing code block text with placeholders
+        const codeBlockPlaceholders = [];
+        message = message.replace(/<pre[^>]*>(.*?)<\/pre>/gs, (match) => {
+            const placeholder = `{{CODEBLOCK_${codeBlockPlaceholders.length}}}`;
+            codeBlockPlaceholders.push(match);
+            return placeholder;
+        });
+
+        // Format bold text
+        message = message.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+        // Format italic text
+        message = message.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Format headings (exclude #include statements)
+        message = message.replace(/^(#{1,6})\s*(?!include)(.*)$/gm, (match, hash, text) => {
+            const level = hash.length;
+            return `<h${level}>${text}</h${level}>`;
+        });
+
+        // Restore code blocks from placeholders
+        message = message.replace(/{{CODEBLOCK_\d+}}/g, (placeholder) => {
+            const index = placeholder.match(/\d+/)[0];
+            return codeBlockPlaceholders[index];
+        });
+
+        // Handle line breaks (newlines to <br> tags)
+        message = message.replace(/\n/g, '<br>');
+    }
 
     // Add sender and message content
-    messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    messageDiv.innerHTML = `${message}`;
 
     // Apply styling based on sender
     Object.assign(messageDiv.style, {
         padding: "5px",
-        margin: "5px 0",
+        paddingLeft: "10px",
+        margin: sender === "You" 
+            ? "5px 20px 7px 0"  // 10px margin-bottom when sender is "You"
+            : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
         borderRadius: "5px",
         backgroundColor: sender === "You" ? "#f1f1f1" : "#e0f7fa",
         alignSelf: sender === "You" ? "flex-start" : "flex-end",
     });
 
     messagesContainer.appendChild(messageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom
+    scrollToBottom()// Scroll to bottom
+}
+
+
+function scrollToBottom() {
+    const messagesContainer = document.getElementById('messages-container');
+    const targetScrollTop = messagesContainer.scrollHeight;
+    const currentScrollTop = messagesContainer.scrollTop;
+    const scrollDistance = targetScrollTop - currentScrollTop;
+
+    const duration = 1000; // Duration of the scroll in milliseconds
+    let startTime = null;
+
+    function scrollStep(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = (timestamp - startTime) / duration;
+        if (progress < 1) {
+            messagesContainer.scrollTop = currentScrollTop + scrollDistance * progress;
+            window.requestAnimationFrame(scrollStep);
+        } else {
+            messagesContainer.scrollTop = targetScrollTop; // Ensure final scroll position
+        }
+    }
+
+    window.requestAnimationFrame(scrollStep);
 }
 
 
@@ -293,7 +397,10 @@ async function processMessageWithGeminiAPI(chatHistory, apiKey) {
             ],
         }));
 
-        console.log("Payload:", JSON.stringify({ contents }, null, 2));
+        // console.log("Payload:", JSON.stringify({ contents }, null, 2));
+        console.log(contents);
+        console.log(chatHistory);
+
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
