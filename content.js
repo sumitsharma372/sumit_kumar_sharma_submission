@@ -162,7 +162,7 @@ async function handleSendMessage() {
     input.value = "";
 
     // Process the message with Gemini API
-    const response = await processMessageWithGeminiAPI(message);
+    const response = await processMessageWithGeminiAPI(message,"AIzaSyCh2eFENy84tEICT3Kc4nHmgVho2Yu5GSU");
 
     if (response) {
         appendMessage("AI", response);
@@ -186,17 +186,33 @@ function appendMessage(sender, message) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom
 }
 
-async function processMessageWithGeminiAPI(message) {
+async function processMessageWithGeminiAPI(message, apiKey) {
     try {
-        const response = await fetch("https://api.gemini.example/endpoint", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query: message }),
-        });
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                { text: message },
+                            ],
+                        },
+                    ],
+                }),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
+        }
+
         const data = await response.json();
-        return data.response || "No response received.";
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
     } catch (error) {
         console.error("Error processing message:", error);
         return null;
