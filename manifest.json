@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://maang.in/problems/*"
+        "https://maang.in/*"
       ],
       "js": [
         "content.js"
