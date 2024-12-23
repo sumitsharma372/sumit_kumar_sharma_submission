@@ -6,6 +6,7 @@ function setup() {
     addAiButton();
 
     if (!aiButtonObserver) {
+        console.log("creating observer")
         aiButtonObserver = new MutationObserver(() => {
             handleRouteChange();
         });
@@ -17,8 +18,53 @@ function correctUrl() {
     return window.location.pathname.startsWith('/problems/');
 }
 
+function getIdFromUrl(url) {
+    const parsedUrl = new URL(url);
+    const pathSegments = parsedUrl.pathname.split("/");
+    return pathSegments[pathSegments.length - 1];
+}
+
+
+function dataProvider() {
+    const proburl = window.location.href;
+    const id = getIdFromUrl(proburl);
+    const problemName = document.getElementsByClassName('problem_heading')[0]?.textContent || '';
+    const limits = document.getElementsByClassName('problem_paragraph');
+    const timeLimit = limits[2]?.textContent || '';
+    const memoryLimit = limits[4]?.textContent || '';
+    const desc = document.getElementsByClassName('coding_desc__pltWY')[0]?.textContent || '';
+
+    const inOutConst = document.getElementsByClassName('coding_input_format__pv9fS');
+    const input_format = inOutConst[0]?.textContent || '';
+    const output_format = inOutConst[1]?.textContent || '';
+    const constraints = inOutConst[2]?.textContent || '';
+    const input = inOutConst[3]?.textContent || '';
+    const output = inOutConst[4]?.textContent || '';
+
+    const code = document.getElementsByClassName('view-lines monaco-mouse-cursor-text')[0]?.textContent || '';
+
+    const data = {
+        id: id,
+        problemName: problemName,
+        timeLimit: timeLimit,
+        memoryLimit: memoryLimit,
+        description: desc,
+        inputFormat: input_format,
+        outputFormat: output_format,
+        constraints: constraints,
+        sampleInput: input,
+        sampleOutput: output,
+        code: code
+    };
+
+    return data;
+}
+
+
 function addAiButton() {
     if (!correctUrl() || document.getElementById('ai-assistant-button')) return;
+
+    console.log("creating AI button");
 
     const assistantButton = document.createElement("div");
     assistantButton.id = "ai-assistant-button";
@@ -58,14 +104,23 @@ function removeAiButton() {
     }
 }
 
+let previousPath = window.location.pathname;
+
 function handleRouteChange() {
+    const currentPath = window.location.pathname;
+
+    if (currentPath !== previousPath) {
+        previousPath = currentPath;
+        removeChatbox(); // Close the chatbox only if the route has changed.
+    }
+
     if (correctUrl()) {
         addAiButton();
     } else {
         removeAiButton();
-        removeChatbox();
     }
 }
+
 
 function toggleChatbox() {
     if (document.getElementById('ai-chatbox')) {
@@ -79,16 +134,20 @@ function createChatbox() {
     const chatbox = document.createElement("div");
     chatbox.id = "ai-chatbox";
 
+    data = dataProvider();
+    console.log(data);
+
     // Initial styling of chatbox
     Object.assign(chatbox.style, {
         position: "fixed",
         bottom: "80px",
         left: "20px",
         width: "500px",
-        height: "800px",
+        height: "730px",
+        overflow: "hidden",
         // paddingTop: "5px",
         backgroundColor: "#fff",
-        border: "1px solid #ccc",
+        border: "1px solid #A5E6FE",
         borderRadius: "10px",
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
         display: "flex",
@@ -103,8 +162,9 @@ function createChatbox() {
         position: "absolute",
         top: "0",
         left: "50%", // Set left to 50% to position it at the center
-        width: "30px",
+        width: "100%",
         height: "25px",
+        backgroundColor: "#F4FCFF",
         cursor: "grab", // Set cursor to grab in this area
         display: "flex",
         alignItems: "center",
@@ -143,8 +203,43 @@ function createChatbox() {
     document.head.appendChild(styleSheet);
 
 
+    const instructions = `
+    You are provided with a problem statement related to a coding problem. 
+    Your task is to understand the problem statement. You will mainly act as an assistant to help me understand the problem, hints, and solution approach. 
+    You must prevent providing code directly to me, instructing me to try on my own first. 
+    If I am desperate enough or helpless to solve the problem, you may provide the code. 
+    Never provide the solution code in any programming language even if I ask. If I ask for the more than 3 times you can provide. This is very important, you must keep in mind.
+    You must prompt me write the code on my own saying that you will provide hints or ideas to solve and provide hints.
+    Just make sure that your focus is to help me understand the problem and help me with logic building. 
+    You should also know the topic which the coding problem is related to. 
+
+    In case I provide you some code and ask for logical or sytax mistakes, you must answer it without hesitation.
+    The problem statement will be delimited by triple backticks:
+
+    \`\`\`
+    Problem Name: ${data.problemName}
+    Problem Description: ${data.description}
+    Input Format: ${data.inputFormat}
+    Output Format: ${data.outputFormat}
+    Sample Input: ${data.sampleInput}
+    Sample Output: ${data.sampleOutput}
+    \`\`\`
+    `;
+
+
+    const id = data.id;
+    const temp = localStorage.getItem(id);
+    let chatHistory = temp ? JSON.parse(temp) : [];
+
+    // Check if chatHistory is empty and set initial messages
+    if (chatHistory.length === 0) {
+        chatHistory.push({ sender: "You", text: instructions });
+        chatHistory.push({ sender: "AI", text: "How may I assist you?" });
+    }
+
+
     // Repopulate chat history
-    chatHistory.forEach(({ sender, text }) => {
+    chatHistory.slice(1).forEach(({ sender, text }) => {
         appendMessage(sender, text, messagesContainer);
     });
 
@@ -163,9 +258,9 @@ function createChatbox() {
         flex: "1",
         padding: "5px",
         borderRadius: "5px",
-        border: "1px solid #e0f7fa",
+        border: "1px solid #ddf6ff",
         resize: "none",
-        outline: "2px solid #e0f7fa",
+        outline: "2px solid #ddf6ff",
     });
 
 
@@ -199,7 +294,7 @@ function createChatbox() {
     input.addEventListener("keydown", (e) => {
         // Check if Enter is pressed without Shift
         if (e.key === "Enter" && !e.shiftKey && document.activeElement === input && input.value.trim() !== "") {
-            handleSendMessage(); 
+            handleSendMessage(id,chatHistory); 
             input.value = ""; // Clear the input after sending the message
             e.preventDefault(); // Prevent default behavior of Enter key (new line or form submit)
         }
@@ -213,7 +308,7 @@ function createChatbox() {
 
     
 
-    sendButton.addEventListener("click", handleSendMessage);
+    sendButton.addEventListener("click", () => handleSendMessage(id,chatHistory));
 
     inputContainer.appendChild(input);
     inputContainer.appendChild(sendButton);
@@ -256,9 +351,9 @@ function removeChatbox() {
         chatbox.remove();
     }
 }
-let chatHistory = []; // Store the chat history
+// let chatHistory = []; // Store the chat history
 
-async function handleSendMessage() {
+async function handleSendMessage(id,chatHistory) {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
     if (!message) return;
@@ -277,6 +372,8 @@ async function handleSendMessage() {
     } else {
         appendMessage("AI", "Sorry, I couldn't process your request.");
     }
+
+    localStorage.setItem(id, JSON.stringify(chatHistory))
 }
 
 function appendMessage(sender, message, container = null) {
@@ -363,8 +460,9 @@ function appendMessage(sender, message, container = null) {
             ? "5px 20px 7px 0"  // 10px margin-bottom when sender is "You"
             : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
         borderRadius: "5px",
-        backgroundColor: sender === "You" ? "#f1f1f1" : "#e0f7fa",
+        backgroundColor: sender === "You" ? "#f1f1f1" : "#ddf6ff",
         alignSelf: sender === "You" ? "flex-start" : "flex-end",
+        border: "1px solid #A5E6FE"
     });
 
     messagesContainer.appendChild(messageDiv);
@@ -410,7 +508,6 @@ function scrollToBottom() {
 
 async function processMessageWithGeminiAPI(chatHistory, apiKey) {
     try {
-        // Map chat history to the required format
         const contents = chatHistory.map((message) => ({
             role: message.sender === "You" ? "user" : "model",
             parts: [
