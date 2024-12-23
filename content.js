@@ -127,10 +127,21 @@ function createChatbox() {
     messagesContainer.id = "messages-container";
     Object.assign(messagesContainer.style, {
         flex: "1",
-        overflowY: "auto",
+        overflowY: "auto", // Allows scrolling
         padding: "10px",
-        marginTop: "18px"
+        marginTop: "18px",
+        scrollbarWidth: "none" // Firefox-specific
     });
+
+    // WebKit-specific scrollbar hiding
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+        #messages-container::-webkit-scrollbar {
+            display: none; /* Hides scrollbar in WebKit browsers */
+        }
+    `;
+    document.head.appendChild(styleSheet);
+
 
     // Repopulate chat history
     chatHistory.forEach(({ sender, text }) => {
@@ -347,8 +358,7 @@ function appendMessage(sender, message, container = null) {
 
     // Apply styling based on sender
     Object.assign(messageDiv.style, {
-        padding: "5px",
-        paddingLeft: "10px",
+        padding: "10px",
         margin: sender === "You" 
             ? "5px 20px 7px 0"  // 10px margin-bottom when sender is "You"
             : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
@@ -364,6 +374,13 @@ function appendMessage(sender, message, container = null) {
 
 function scrollToBottom() {
     const messagesContainer = document.getElementById('messages-container');
+
+    // Check if the container exists
+    if (!messagesContainer) {
+        // console.error("Element with ID 'messages-container' not found.");
+        return;
+    }
+
     const targetScrollTop = messagesContainer.scrollHeight;
     const currentScrollTop = messagesContainer.scrollTop;
     const scrollDistance = targetScrollTop - currentScrollTop;
@@ -374,16 +391,20 @@ function scrollToBottom() {
     function scrollStep(timestamp) {
         if (!startTime) startTime = timestamp;
         const progress = (timestamp - startTime) / duration;
+
         if (progress < 1) {
+            // Calculate intermediate scroll position
             messagesContainer.scrollTop = currentScrollTop + scrollDistance * progress;
             window.requestAnimationFrame(scrollStep);
         } else {
-            messagesContainer.scrollTop = targetScrollTop; // Ensure final scroll position
+            // Ensure the final scroll position is set
+            messagesContainer.scrollTop = targetScrollTop;
         }
     }
 
     window.requestAnimationFrame(scrollStep);
 }
+
 
 
 
