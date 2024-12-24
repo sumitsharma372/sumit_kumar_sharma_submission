@@ -1,0 +1,92 @@
+/* General styles */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+/* Container styling */
+.container {
+    width: 350px;
+    padding: 25px;
+    background-color: #ffffff;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Heading styling */
+.heading {
+    font-size: 22px;
+    color: #212529;
+    margin-bottom: 15px;
+}
+
+/* Subheading styling */
+.subheading {
+    font-size: 16px;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+/* Key-handler styles */
+.key-handler {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Input field styling */
+.key-handler input {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.key-handler input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Button styling */
+.key-handler button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.key-handler button:hover {
+    background-color: #0056b3;
+}
+
+/* Note styling */
+.note {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 10px;
+}
+
+/* Success message styling */
+.success-message {
+    font-size: 14px;
+    color: #28a745;
+    margin-top: 15px;
+    text-align: center;
+    display: none; /* Initially hidden */
+}

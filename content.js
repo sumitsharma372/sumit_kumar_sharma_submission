@@ -3,24 +3,54 @@ window.addEventListener('load', setup);
 let aiButtonObserver = null;
 let themeObserver = null;
 
-function setup() {
-    addAiButton();
+let ai_apiKey = '';
 
-    if (!aiButtonObserver) {
-        console.log("creating observer")
-        aiButtonObserver = new MutationObserver(() => {
-            handleRouteChange();
-        });
-        aiButtonObserver.observe(document.body, { childList: true, subtree: true });
-    }
+async function setup() {
+    try {
+        ai_apiKey = await getApiKey();
+        if (!ai_apiKey) {
+            console.log("API key is missing. AI button will not be visible.");
+            return;  
+        }
 
-    if (!themeObserver) {
-        console.log("Creating observer for theme changes...");
-        observeThemeChanges();
+        addAiButton();  
+
+        if (!aiButtonObserver) {
+            console.log("Creating observer for AI button...");
+            aiButtonObserver = new MutationObserver(() => {
+                handleRouteChange();
+            });
+            aiButtonObserver.observe(document.body, { childList: true, subtree: true });
+        }
+
+        if (!themeObserver) {
+            console.log("Creating observer for theme changes...");
+            observeThemeChanges();
+        }
+    } catch (error) {
+        console.error("Error retrieving API key:", error);
+        console.log("AI button will not be visible.");
     }
 }
 
+
+function getApiKey() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('apiKey', (result) => {
+            if (result.apiKey) {
+                resolve(result.apiKey);
+            } else {
+                reject("No API key found.");
+            }
+        });
+    });
+}
+
+
+
 const drag_white = chrome.runtime.getURL("assets/drag_white.png"), drag = chrome.runtime.getURL("assets/drag.png");
+const icon_light = chrome.runtime.getURL("assets/icon_light.png"), icon_dark = chrome.runtime.getURL("assets/icon_dark.png");
+const send_light = chrome.runtime.getURL("assets/send_light.png");// icon_dark = chrome.runtime.getURL("assets/icon_dark.png");
 
 
 function observeThemeChanges() {
@@ -112,6 +142,9 @@ function updateChatboxTheme(isDarkTheme) {
     codeElements.forEach((code) => {
         code.style.backgroundColor = isDarkTheme ? '#2B384E' : '#f5f5f5';
     });
+
+    const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
+    aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
 }
 
 
@@ -189,13 +222,14 @@ const darkThemeColors = {
 function addAiButton() {
     if (!correctUrl() || document.getElementById('ai-assistant-button')) return;
 
-    console.log("creating AI button");
 
     const assistantButton = document.createElement("div");
     assistantButton.id = "ai-assistant-button";
 
+    const isDarkTheme = getDarkTheme();
+
     const logo = document.createElement("img");
-    logo.src = chrome.runtime.getURL("assets/icon.png");
+    logo.src = isDarkTheme ? icon_dark : icon_light;
     logo.alt = "AI Assistant Logo";
 
     Object.assign(logo.style, {
@@ -208,7 +242,7 @@ function addAiButton() {
 
     Object.assign(assistantButton.style, {
         position: "fixed",
-        bottom: "20px",
+        bottom: "30px",
         left: "20px",
         backgroundColor: "transparent",
         padding: "0",
@@ -398,10 +432,11 @@ function createChatbox() {
 
     // Create an image element
     const img = document.createElement("img");
-    img.src = chrome.runtime.getURL("assets/send.png"); // Ensure the path to the image is correct
+    // img.src = chrome.runtime.getURL("assets/send.png"); // Ensure the path to the image is correct
+    img.src = send_light;
     img.alt = "Send"; // Alt text for the image
     img.style.width = "40px"; // Adjust image size if needed
-    img.style.height = "30px"; // Adjust image size if needed
+    img.style.height = "40px"; // Adjust image size if needed
 
     // Append the image to the button
     sendButton.appendChild(img);
@@ -411,13 +446,14 @@ function createChatbox() {
         padding: "5px 10px",
         borderRadius: "5px",
         border: "none",
-        // backgroundColor: "#007bff",
+        background: "linear-gradient(90deg, hsla(0, 0%, 100%, .6), #eaf1fd)", // Directly use the gradient values
         color: "#fff",
         cursor: "pointer",
         display: "flex", // Use flexbox to align the image
         justifyContent: "center", // Center the image
         alignItems: "center", // Center the image vertically
     });
+    
 
 
     input.addEventListener("keydown", (e) => {
@@ -484,7 +520,7 @@ function removeChatbox() {
 }
 // let chatHistory = []; // Store the chat history
 
-async function handleSendMessage(id,chatHistory) {
+async function handleSendMessage(id, chatHistory) {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
     if (!message) return;
@@ -494,18 +530,40 @@ async function handleSendMessage(id,chatHistory) {
 
     input.value = "";
 
-    // Process the message with Gemini API
-    const response = await processMessageWithGeminiAPI(chatHistory, "AIzaSyCh2eFENy84tEICT3Kc4nHmgVho2Yu5GSU");
+    try {
+        const apiKey = await getApiKey();
+        console.log(apiKey);
 
-    if (response) {
-        appendMessage("AI", response);
-        chatHistory.push({ sender: "AI", text: response }); // Add AI message to history
-    } else {
-        appendMessage("AI", "Sorry, I couldn't process your request.");
+        const response = await processMessageWithGeminiAPI(chatHistory, apiKey);
+
+        if (response) {
+            appendMessage("AI", response);
+            chatHistory.push({ sender: "AI", text: response }); // Add AI message to history
+        } else {
+            appendMessage("AI", "Sorry, I couldn't process your request.");
+        }
+
+        // Save updated chat history in localStorage
+        localStorage.setItem(id, JSON.stringify(chatHistory));
+    } catch (error) {
+        console.error("Error retrieving API key:", error);
+        appendMessage("AI", "Sorry, the API key is missing or invalid.");
     }
-
-    localStorage.setItem(id, JSON.stringify(chatHistory))
 }
+
+// Function to get the API key from chrome.storage.local
+function getApiKey() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('apiKey', (result) => {
+            if (result.apiKey) {
+                resolve(result.apiKey);
+            } else {
+                reject("No API Key found.");
+            }
+        });
+    });
+}
+
 
 function appendMessage(sender, message, container = null) {
     const messagesContainer = container || document.getElementById('messages-container');

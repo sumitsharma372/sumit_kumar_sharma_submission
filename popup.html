@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+    <title>AI Assistant Setup</title>
 </head>
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>    
+    <div class="container">
+        <h3 class="heading">AI Assistant Setup</h3>
+        <p class="subheading">Enter your API key below to get started:</p>
+        <div class="key-handler">
+            <input type="text" placeholder="Enter your API Key">
+            <button>Save API Key</button>
+        </div>
+        <p class="note">Your API key will be securely saved in your browser.</p>
+        <p class="success-message" style="display: none;"></p>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>

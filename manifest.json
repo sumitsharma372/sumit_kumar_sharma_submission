@@ -28,8 +28,11 @@
         "assets/play.png",
         "assets/delete.png",
         "assets/icon.png",
+        "assets/icon_light.png",
+        "assets/icon_dark.png",
         "assets/drag.png",
         "assets/send.png",
+        "assets/send_light.png",
         "assets/drag_white.png"
       ],
       "matches" : ["<all_urls>"]
@@ -37,9 +40,9 @@
   ],
   "action": {
     "default_icon": {
-      "16": "assets/ext-icon.png",
-      "24": "assets/ext-icon.png",
-      "32": "assets/ext-icon.png"
+      "16": "assets/icon_light.png",
+      "24": "assets/icon_light.png",
+      "32": "assets/icon_light.png"
     },
     "default_popup": "popup.html",
     "default_title": "A tooltip popup description when you hover over the Chrome Extension icon."
