@@ -131,6 +131,26 @@ function updateChatboxTheme(isDarkTheme) {
 
     const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
     aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
+
+    const thumbColor = isDarkTheme ? "#2E3440" : "#DDF6FF"; // Darker for dark theme, lighter for light theme
+
+    const styleSheet = document.getElementById("scrollbar-styles");
+
+    // Update the content of the existing style tag
+    styleSheet.textContent = `
+        #messages-container::-webkit-scrollbar {
+            width: 6px; /* Sets the width of the scrollbar */
+        }
+
+        #messages-container::-webkit-scrollbar-thumb {
+            background-color: ${thumbColor}; /* Thumb color based on theme */
+            border-radius: 10px; /* Rounds the corners of the thumb */
+        }
+
+        #messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
+        }
+    `;
 }
 
 
@@ -347,17 +367,35 @@ async function createChatbox() {
         overflowY: "auto", // Allows scrolling
         padding: "10px",
         marginTop: "18px",
-        scrollbarWidth: "none" // Firefox-specific
+        scrollbarWidth: "5px" // Firefox-specific
     });
 
     // WebKit-specific scrollbar hiding
+
+    // "#2E3440" : "#DDF6FF
+    // "#292d36" : "#badce8"
     const styleSheet = document.createElement("style");
+    styleSheet.id = "scrollbar-styles"
+
+    const thumbColor = darkTheme ? "#2E3440" : "#DDF6FF" // Slightly dark for dark theme, lighter for light theme
+
     styleSheet.textContent = `
         #messages-container::-webkit-scrollbar {
-            display: none; /* Hides scrollbar in WebKit browsers */
+            width: 6px; /* Sets the width of the scrollbar */
+        }
+
+        #messages-container::-webkit-scrollbar-thumb {
+            background-color: ${thumbColor}; /* Thumb color based on theme */
+            border-radius: 10px; /* Rounds the corners of the thumb */
+        }
+
+        #messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
         }
     `;
+
     document.head.appendChild(styleSheet);
+
 
 
     const instructions = `
@@ -701,13 +739,39 @@ function scrollToBottom() {
 
 async function processMessageWithGroqAPI(chatHistory, apiKey) {
     try {
+        const maxTokens = 6000;  // Set the token limit
+
+        // Function to estimate token count (rough approximation for demonstration)
+        const estimateTokens = (text) => {
+            // One common estimate: approximately 4 characters per token (including spaces)
+            return Math.ceil(text.length / 3);
+        };
+
+        let totalTokens = 0;
+        let truncatedHistory = [];
+
+        // Traverse chat history in reverse order, adding messages until the token limit is reached
+        for (let i = chatHistory.length - 1; i >= 0; i--) {
+            const message = chatHistory[i];
+            const messageTokens = estimateTokens(message.text);
+
+            // Check if adding this message exceeds the token limit
+            if (totalTokens + messageTokens > maxTokens) {
+                break;  // Stop adding messages if the token limit is exceeded
+            }
+
+            truncatedHistory.unshift(message);  // Add message at the beginning
+            totalTokens += messageTokens;  // Accumulate token count
+        }
+
+        // Log the total tokens for debugging
+        console.log("Total tokens in the message history:", totalTokens);
+
         // Prepare the messages in the format required by Groq API
-        const messages = chatHistory.map((message) => ({
-            role: message.sender === "You" ? "user" : "assistant",  // Adjust the role as per your requirement
+        const messages = truncatedHistory.map((message) => ({
+            role: message.sender === "You" ? "user" : "assistant",
             content: message.text,
         }));
-
-        // console.log("Messages:", messages);
 
         // Make the API request
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
