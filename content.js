@@ -6,45 +6,31 @@ let themeObserver = null;
 let ai_apiKey = '';
 
 async function setup() {
-    try {
-        ai_apiKey = await getApiKey();
-        if (!ai_apiKey) {
-            console.log("API key is missing. AI button will not be visible.");
-            return;  
-        }
+    addAiButton();  
 
-        addAiButton();  
+    if (!aiButtonObserver) {
+        console.log("Creating observer for AI button...");
+        aiButtonObserver = new MutationObserver(() => {
+            handleRouteChange();
+        });
+        aiButtonObserver.observe(document.body, { childList: true, subtree: true });
+    }
 
-        if (!aiButtonObserver) {
-            console.log("Creating observer for AI button...");
-            aiButtonObserver = new MutationObserver(() => {
-                handleRouteChange();
-            });
-            aiButtonObserver.observe(document.body, { childList: true, subtree: true });
-        }
-
-        if (!themeObserver) {
-            console.log("Creating observer for theme changes...");
-            observeThemeChanges();
-        }
-    } catch (error) {
-        console.error("Error retrieving API key:", error);
-        console.log("AI button will not be visible.");
+    if (!themeObserver) {
+        console.log("Creating observer for theme changes...");
+        observeThemeChanges();
     }
 }
 
 
 function getApiKey() {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get('apiKey', (result) => {
-            if (result.apiKey) {
-                resolve(result.apiKey);
-            } else {
-                reject("No API key found.");
-            }
+        chrome.storage.local.get('az_ai_apikey', (result) => {
+            resolve(result.az_ai_apikey || null);
         });
     });
 }
+
 
 
 
@@ -289,7 +275,13 @@ function toggleChatbox() {
     }
 }
 
-function createChatbox() {
+async function createChatbox() {
+    ai_apiKey = await getApiKey();
+    if (!ai_apiKey) {
+        console.log("API key is missing. Chatbox will not be created.");
+        window.alert("Please Enter the API Key by clicking the extension button")
+        return;
+    }
     const chatbox = document.createElement("div");
     chatbox.id = "ai-chatbox";
 
@@ -365,27 +357,36 @@ function createChatbox() {
 
 
     const instructions = `
-    You are provided with a problem statement related to a coding problem. 
-    Your task is to understand the problem statement. You will mainly act as an assistant to help me understand the problem, hints, and solution approach. 
-    You must prevent providing code directly to me, instructing me to try on my own first. 
-    If I am desperate enough or helpless to solve the problem, you may provide the code. 
-    Never provide the solution code in any programming language even if I ask. If I ask for the more than 3 times you can provide. This is very important, you must keep in mind.
-    You must prompt me write the code on my own saying that you will provide hints or ideas to solve and provide hints.
-    Just make sure that your focus is to help me understand the problem and help me with logic building. 
-    You should also know the topic which the coding problem is related to. 
+        You are acting as an AI assistant to help me with coding problems. Your role is to assist me in understanding the problem, offer helpful hints, and suggest approaches to find a solution.
+        
+        It's important that you guide me in a way that encourages independent thinking and problem-solving. Rather than simply providing the solution, help me develop my skills by suggesting logical steps, breaking down the problem, or pointing out any relevant concepts that might help me. 
+        Your goal is to foster learning, so if I ask for the solution directly, kindly remind me to give it a try first. If I feel completely stuck after multiple attempts (more than three times), you may provide the solution, but this should be the last resort. 
 
-    In case I provide you some code and ask for logical or sytax mistakes, you must answer it without hesitation.
-    The problem statement will be delimited by triple backticks:
+        In case I share code with you, please help me identify logical errors, syntax mistakes, or areas that need improvement. Be direct and clear in your explanations, but also considerate of my learning process.
+        
+        Here’s the problem statement, which will be provided in triple backticks:
 
-    \`\`\`
-    Problem Name: ${data.problemName}
-    Problem Description: ${data.description}
-    Input Format: ${data.inputFormat}
-    Output Format: ${data.outputFormat}
-    Sample Input: ${data.sampleInput}
-    Sample Output: ${data.sampleOutput}
-    \`\`\`
+        \`\`\`
+        Problem Name: ${data.problemName}
+        Problem Description: ${data.description}
+        Input Format: ${data.inputFormat}
+        Output Format: ${data.outputFormat}
+        Sample Input: ${data.sampleInput}
+        Sample Output: ${data.sampleOutput}
+        \`\`\`
+
+        Keep in mind that my primary goal is to learn. So, whenever you provide a hint, try to make it clear how that hint connects to the overall solution. Also, make sure you understand the underlying topic related to the problem so you can offer relevant advice. 
+        
+        Here are a few strategies you might suggest:
+        - Breaking the problem into smaller, manageable parts.
+        - Drawing on fundamental concepts or algorithms that could apply to the problem.
+        - Offering insights into efficient ways of approaching a solution, without giving away the final code.
+
+        Feel free to ask clarifying questions if needed. The aim is to make this a collaborative process where I am guided towards the solution, not simply given the answer. Let's work together to solve this problem and improve my coding skills!
+
+        Always remember: your role is to be a guide, not a solution provider. Make sure your hints or advice are geared toward helping me understand and grow my problem-solving abilities.
     `;
+
 
 
     const id = data.id;
@@ -534,7 +535,7 @@ async function handleSendMessage(id, chatHistory) {
         const apiKey = await getApiKey();
         console.log(apiKey);
 
-        const response = await processMessageWithGeminiAPI(chatHistory, apiKey);
+        const response = await processMessageWithGroqAPI(chatHistory, ai_apiKey);
 
         if (response) {
             appendMessage("AI", response);
@@ -549,19 +550,6 @@ async function handleSendMessage(id, chatHistory) {
         console.error("Error retrieving API key:", error);
         appendMessage("AI", "Sorry, the API key is missing or invalid.");
     }
-}
-
-// Function to get the API key from chrome.storage.local
-function getApiKey() {
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get('apiKey', (result) => {
-            if (result.apiKey) {
-                resolve(result.apiKey);
-            } else {
-                reject("No API Key found.");
-            }
-        });
-    });
 }
 
 
@@ -603,6 +591,7 @@ function appendMessage(sender, message, container = null) {
 
         // Handle line breaks for "You" (newlines to <br> tags)
         message = message.replace(/\n/g, '<br>');
+        
     } else {
         // Format code blocks (for other senders)
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
@@ -703,41 +692,44 @@ function scrollToBottom() {
 }
 
 
-
-
-async function processMessageWithGeminiAPI(chatHistory, apiKey) {
+async function processMessageWithGroqAPI(chatHistory, apiKey) {
     try {
-        const contents = chatHistory.map((message) => ({
-            role: message.sender === "You" ? "user" : "model",
-            parts: [
-                { text: message.text },
-            ],
+        // Prepare the messages in the format required by Groq API
+        const messages = chatHistory.map((message) => ({
+            role: message.sender === "You" ? "user" : "assistant",  // Adjust the role as per your requirement
+            content: message.text,
         }));
 
-        // console.log("Payload:", JSON.stringify({ contents }, null, 2));
-        console.log(contents);
-        console.log(chatHistory);
+        console.log("Messages:", messages);
 
+        // Make the API request
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: "llama-3.1-70b-versatile",  // Specify the model you want to use
+                messages: messages,
+            }),
+        });
 
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ contents }),
-            }
-        );
-
+        // Handle errors in the response
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`API returned status ${response.status}:`, errorText);
             throw new Error(`API returned status ${response.status}`);
         }
 
+        // Parse the response
         const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+        console.log("Response data:", data);
+
+        // Extract the content from the assistant's response
+        const assistantResponse = data.choices?.[0]?.message?.content || "No response received.";
+        return assistantResponse;
+
     } catch (error) {
         console.error("Error processing message:", error);
         return null;

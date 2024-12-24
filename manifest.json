@@ -40,9 +40,9 @@
   ],
   "action": {
     "default_icon": {
-      "16": "assets/icon_light.png",
-      "24": "assets/icon_light.png",
-      "32": "assets/icon_light.png"
+      "16": "assets/icon.png",
+      "24": "assets/icon.png",
+      "32": "assets/icon.png"
     },
     "default_popup": "popup.html",
     "default_title": "A tooltip popup description when you hover over the Chrome Extension icon."
