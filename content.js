@@ -1,6 +1,7 @@
 window.addEventListener('load', setup);
 
 let aiButtonObserver = null;
+let themeObserver = null;
 
 function setup() {
     addAiButton();
@@ -12,7 +13,108 @@ function setup() {
         });
         aiButtonObserver.observe(document.body, { childList: true, subtree: true });
     }
+
+    if (!themeObserver) {
+        console.log("Creating observer for theme changes...");
+        observeThemeChanges();
+    }
 }
+
+const drag_white = chrome.runtime.getURL("assets/drag_white.png"), drag = chrome.runtime.getURL("assets/drag.png");
+
+
+function observeThemeChanges() {
+    const themeSwitchElement = document.getElementsByClassName('ant-switch d-flex mt-1 css-19gw05y')[0];
+    
+    if (!themeSwitchElement) {
+        console.error("Theme switch element not found!");
+        return;
+    }
+
+    // MutationObserver to detect changes in the class list
+    const observer = new MutationObserver(() => {
+        const isDarkTheme = themeSwitchElement.classList.contains('ant-switch-checked');
+        console.log("Theme changed:", isDarkTheme ? "Dark" : "Light");
+        updateChatboxTheme(isDarkTheme);
+    });
+
+    observer.observe(themeSwitchElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+}
+
+
+function updateChatboxTheme(isDarkTheme) {
+    const chatbox = document.getElementById('ai-chatbox');
+    if (!chatbox) return;
+
+    const themeColors = isDarkTheme ? darkThemeColors : lightThemeColors;
+
+    // Update chatbox styles
+    Object.assign(chatbox.style, {
+        backgroundColor: themeColors.backgroundColor,
+        borderColor: themeColors.borderColor,
+    });
+
+    const messagesContainer = document.getElementById('messages-container');
+    if (messagesContainer) {
+        Object.assign(messagesContainer.style, {
+            color: themeColors.textColor,
+            borderColor: themeColors.borderColor,
+        });
+    }
+
+    // Update each message's style
+    const messageDivs = document.querySelectorAll('.chat-message');
+    messageDivs.forEach((messageDiv) => {
+        if (messageDiv.classList.contains('from-you')) {
+            messageDiv.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f1f1f1';
+            messageDiv.style.color = isDarkTheme ? '#f1f1f1' : '#000000';
+            messageDiv.style.borderWidth = isDarkTheme ? '1px' : '2px'; // Decrease border width in dark theme
+        } else {
+            messageDiv.style.backgroundColor = isDarkTheme ? '#2b384e' : '#ddf6ff';
+            messageDiv.style.color = isDarkTheme ? '#ffffff' : '#000000';
+            messageDiv.style.borderWidth = isDarkTheme ? '1px' : '2px'; // Decrease border width in dark theme
+        }
+        messageDiv.style.borderColor = themeColors.borderColor
+    });
+
+
+    const dragDiv = document.getElementById('drag-area');
+    if(dragDiv){
+        Object.assign(dragDiv.style,{
+            backgroundColor: themeColors.dragAreaBg,
+        })
+    }
+
+    const imgElement = dragDiv.querySelector('img');
+    if (imgElement) {
+        imgElement.src = isDarkTheme ? drag_white : drag;
+    }
+
+    const inputContainer = document.getElementsByClassName('input-container')[0];
+    const promptArea = document.getElementsByClassName('prompt-area')[0];
+
+    inputContainer.style.backgroundColor = themeColors.backgroundColor;
+    promptArea.style.backgroundColor = themeColors.backgroundColor;
+    promptArea.style.color = themeColors.textColor;
+    promptArea.style.outlineWidth = isDarkTheme ? '0' : '2px';
+
+
+    const preElements = chatbox.querySelectorAll('pre');
+    preElements.forEach((pre) => {
+        pre.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f5f5f5';
+        pre.style.color = isDarkTheme ? '#f1f1f1' : '#000000';
+    });
+
+    const codeElements = chatbox.querySelectorAll('code');
+    codeElements.forEach((code) => {
+        code.style.backgroundColor = isDarkTheme ? '#2B384E' : '#f5f5f5';
+    });
+}
+
+
 
 function correctUrl() {
     return window.location.pathname.startsWith('/problems/');
@@ -75,12 +177,12 @@ const lightThemeColors = {
 };
 
 const darkThemeColors = {
-    backgroundColor: "#1e1e1e",
-    textColor: "#e0e0e0",
-    dragAreaBg: "#333",
-    messageYouBg: "#2d2d2d",
-    messageAIbg: "#3d3d3d",
-    borderColor: "#555",
+    backgroundColor: "#1F2836",
+    textColor: "#E9E9EB",
+    dragAreaBg: "#1F2836",
+    messageYouBg: "#2E3440",
+    messageAIbg: "#2b384e",
+    borderColor: "#5C7E95",
 };
 
 
@@ -172,7 +274,7 @@ function createChatbox() {
         overflow: "hidden",
         // paddingTop: "5px",
         backgroundColor: "#fff",
-        border: "1px solid #A5E6FE",
+        border: "1px solid #A4E6FF",
         borderRadius: "10px",
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
         display: "flex",
@@ -270,13 +372,15 @@ function createChatbox() {
 
     // Chat input
     const inputContainer = document.createElement("div");
+    inputContainer.classList.add('input-container');
     Object.assign(inputContainer.style, {
         display: "flex",
         padding: "10px",
-        borderTop: "1px solid #ccc",
+        // borderTop: "1px solid #ccc",
     });
 
     const input = document.createElement("textarea");
+    input.classList.add('prompt-area');
     input.id = "chat-input";
     input.placeholder = "Type your message here...";
     Object.assign(input.style, {
@@ -366,6 +470,8 @@ function createChatbox() {
         isDragging = false;
         chatbox.style.cursor = "default"; // Revert cursor to default when not dragging
     });
+
+    updateChatboxTheme(darkTheme);
 }
 
 
@@ -405,6 +511,9 @@ function appendMessage(sender, message, container = null) {
     const messagesContainer = container || document.getElementById('messages-container');
     const messageDiv = document.createElement("div");
 
+
+    const isDarkTheme = getDarkTheme();
+    const themeColors = isDarkTheme ? darkThemeColors : lightThemeColors;
     // Escape HTML to prevent breaking HTML structure inside code blocks
     function escapeHtml(str) {
         return str.replace(/[&<>"']/g, (char) => {
@@ -420,15 +529,18 @@ function appendMessage(sender, message, container = null) {
     }
 
     // If the sender is "You", skip formatting and just preserve code blocks as is
+    const codeBlockStyle = isDarkTheme 
+    ? 'background-color: #2E3440; color: #f1f1f1;' // Dark theme style
+    : 'background-color: #f5f5f5; color: #000000;'; // Light theme style
     if (sender === "You") {
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
-            return `<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
         });
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);
-            return `<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+            return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
         });
 
         // Handle line breaks for "You" (newlines to <br> tags)
@@ -437,12 +549,12 @@ function appendMessage(sender, message, container = null) {
         // Format code blocks (for other senders)
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
-            return `<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
         });
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);
-            return `<code style="background-color: #f5f5f5; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+            return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
         });
 
         // Prevent headings inside code blocks by temporarily replacing code block text with placeholders
@@ -477,6 +589,9 @@ function appendMessage(sender, message, container = null) {
 
     // Add sender and message content
     messageDiv.innerHTML = `${message}`;
+    messageDiv.classList.add('chat-message');
+    messageDiv.classList.add(sender === "You" ? 'from-you' : 'from-other');
+
 
     // Apply styling based on sender
     Object.assign(messageDiv.style, {
@@ -485,9 +600,10 @@ function appendMessage(sender, message, container = null) {
             ? "5px 20px 7px 0"  // 10px margin-bottom when sender is "You"
             : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
         borderRadius: "5px",
-        backgroundColor: sender === "You" ? "#f1f1f1" : "#ddf6ff",
+        backgroundColor: sender === "You" ? themeColors.messageYouBg : themeColors.messageAIbg,
+        color: themeColors.textColor,
         alignSelf: sender === "You" ? "flex-start" : "flex-end",
-        border: "1px solid #A5E6FE"
+        border: `1px solid ${themeColors.borderColor}`
     });
 
     messagesContainer.appendChild(messageDiv);

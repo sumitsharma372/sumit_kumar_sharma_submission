@@ -29,7 +29,8 @@
         "assets/delete.png",
         "assets/icon.png",
         "assets/drag.png",
-        "assets/send.png"
+        "assets/send.png",
+        "assets/drag_white.png"
       ],
       "matches" : ["<all_urls>"]
     }
