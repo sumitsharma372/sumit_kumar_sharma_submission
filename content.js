@@ -260,6 +260,10 @@ function handleRouteChange() {
     }
 
     if (correctUrl()) {
+        if(document.querySelector('.coding_list__V_ZOZ').classList.contains('coding_card_mod_active___Nidq')){
+            data = dataProvider();
+            console.log(data);
+        }
         addAiButton();
     } else {
         removeAiButton();
@@ -285,8 +289,8 @@ async function createChatbox() {
     const chatbox = document.createElement("div");
     chatbox.id = "ai-chatbox";
 
-    data = dataProvider();
-    console.log(data);
+    // data = dataProvider();
+    // console.log(data);
 
     let darkTheme = getDarkTheme() ? 1 : 0;
 
