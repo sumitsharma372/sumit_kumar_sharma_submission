@@ -151,6 +151,12 @@ function updateChatboxTheme(isDarkTheme) {
             background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
         }
     `;
+
+    const codeLanguage = document.querySelectorAll('.code-language');
+    preElements.forEach((codeLan) => {
+        // codeLan.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f5f5f5';
+        codeLan.style.color = isDarkTheme ? '#a1b5d4' : '#404d61';
+    });
 }
 
 
@@ -637,11 +643,17 @@ function appendMessage(sender, message, container = null) {
         
     } else {
         // Format code blocks (for other senders)
-        message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
+        message = message.replace(/```(\w+)\s*([\s\S]+?)```/g, (match, language, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
             const highlightedCode = hljs.highlightAuto(escapedCode).value;
-            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>`;
+        
+            // Create a language label in a block element, placed above the code block
+            const languageLabel = `<div class="code-language" style="margin-bottom: 5px; margin-top: 10px; padding-left: 3px; color: ${isDarkTheme ? '#a1b5d4' : '#404d61'};">${language}</div>`;
+        
+            // Return the language label followed by the highlighted code block
+            return `${languageLabel}<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>`;
         });
+        
 
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
