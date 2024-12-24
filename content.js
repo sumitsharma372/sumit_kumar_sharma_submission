@@ -622,7 +622,6 @@ function appendMessage(sender, message, container = null) {
     : 'background-color: #f5f5f5; color: #000000;'; // Light theme style
     if (sender === "You") {
         message = escapeHtml(message);
-        console.log("Hello ########################")
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
             return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
@@ -630,7 +629,6 @@ function appendMessage(sender, message, container = null) {
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);
-            console.log("Something is baaad ##############");
             return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
         });
 
@@ -641,8 +639,10 @@ function appendMessage(sender, message, container = null) {
         // Format code blocks (for other senders)
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
-            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+            const highlightedCode = hljs.highlightAuto(escapedCode).value;
+            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>`;
         });
+
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);

@@ -14,8 +14,10 @@
         "https://maang.in/*"
       ],
       "js": [
-        "content.js"
-      ]
+        "content.js",
+        "highlight.min.js"
+      ],
+      "css": ["default.min.css"]
     }
   ],
   "background": {
