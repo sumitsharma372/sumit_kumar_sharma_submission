@@ -132,8 +132,6 @@ function updateChatboxTheme(isDarkTheme) {
     const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
     aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
 
-    const thumbColor = isDarkTheme ? "#2E3440" : "#DDF6FF"; // Darker for dark theme, lighter for light theme
-
     const styleSheet = document.getElementById("scrollbar-styles");
 
     // Update the content of the existing style tag
@@ -143,11 +141,24 @@ function updateChatboxTheme(isDarkTheme) {
         }
 
         #messages-container::-webkit-scrollbar-thumb {
-            background-color: ${thumbColor}; /* Thumb color based on theme */
+            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
             border-radius: 10px; /* Rounds the corners of the thumb */
         }
 
         #messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
+        }
+
+        .code-container pre::-webkit-scrollbar {
+            height: 6px; /* Sets the height of the horizontal scrollbar */
+        }
+
+        .code-container pre::-webkit-scrollbar-thumb {
+            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
+            border-radius: 10px; /* Rounds the corners of the thumb */
+        }
+
+        .code-container pre::-webkit-scrollbar-thumb:hover {
             background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
         }
     `;
@@ -157,6 +168,12 @@ function updateChatboxTheme(isDarkTheme) {
         // codeLan.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f5f5f5';
         codeLan.style.color = isDarkTheme ? '#a1b5d4' : '#404d61';
     });
+
+    const copyBtns = document.querySelectorAll('.copy-button');
+    copyBtns.forEach((btn) => {
+        btn.style.color = isDarkTheme ? '#ffffff' : '#333';
+        btn.style.backgroundColor = isDarkTheme ? '#4a4a4a' : '#f0f0f0';
+    }) 
 }
 
 
@@ -383,22 +400,34 @@ async function createChatbox() {
     const styleSheet = document.createElement("style");
     styleSheet.id = "scrollbar-styles"
 
-    const thumbColor = darkTheme ? "#2E3440" : "#DDF6FF" // Slightly dark for dark theme, lighter for light theme
-
     styleSheet.textContent = `
-        #messages-container::-webkit-scrollbar {
-            width: 6px; /* Sets the width of the scrollbar */
-        }
+    #messages-container::-webkit-scrollbar {
+        width: 6px; /* Sets the width of the scrollbar */
+    }
 
-        #messages-container::-webkit-scrollbar-thumb {
-            background-color: ${thumbColor}; /* Thumb color based on theme */
-            border-radius: 10px; /* Rounds the corners of the thumb */
-        }
+    #messages-container::-webkit-scrollbar-thumb {
+        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
+        border-radius: 10px; /* Rounds the corners of the thumb */
+    }
 
-        #messages-container::-webkit-scrollbar-thumb:hover {
-            background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
-        }
-    `;
+    #messages-container::-webkit-scrollbar-thumb:hover {
+        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
+    }
+
+    .code-container pre::-webkit-scrollbar {
+        height: 6px; /* Sets the height of the horizontal scrollbar */
+    }
+
+    .code-container pre::-webkit-scrollbar-thumb {
+        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
+        border-radius: 10px; /* Rounds the corners of the thumb */
+    }
+
+    .code-container pre::-webkit-scrollbar-thumb:hover {
+        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
+    }
+`;
+
 
     document.head.appendChild(styleSheet);
 
@@ -642,17 +671,45 @@ function appendMessage(sender, message, container = null) {
         message = message.replace(/\n/g, '<br>');
         
     } else {
-        // Format code blocks (for other senders)
         message = message.replace(/```(\w+)\s*([\s\S]+?)```/g, (match, language, codeBlock) => {
-            const escapedCode = escapeHtml(codeBlock);
-            const highlightedCode = hljs.highlightAuto(escapedCode).value;
-        
-            // Create a language label in a block element, placed above the code block
+            const highlightedCode = hljs.highlightAuto(codeBlock).value;
             const languageLabel = `<div class="code-language" style="margin-bottom: 5px; margin-top: 10px; padding-left: 3px; color: ${isDarkTheme ? '#a1b5d4' : '#404d61'};">${language}</div>`;
-        
-            // Return the language label followed by the highlighted code block
-            return `${languageLabel}<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>`;
+            
+            // Create a copy button with a data attribute holding the raw code
+            const copyButton = `<button class="copy-button" data-codeblock="${encodeURIComponent(codeBlock)}" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: ${isDarkTheme ? '#4a4a4a' : '#f0f0f0'}; border: none; color: ${isDarkTheme ? '#ffffff' : '#333'}; cursor: pointer; border-radius: 5px;">Copy</button>`;
+            
+            const codeContainer = `<div class="code-container" style="position: relative; margin-bottom: 20px;">${languageLabel}<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>${copyButton}</div>`;
+            
+            return codeContainer;
         });
+        
+        document.addEventListener('click', function (event) {
+            if (event.target.classList.contains('copy-button')) {
+                // Retrieve the raw code from the data attribute
+                const codeBlock = decodeURIComponent(event.target.getAttribute('data-codeblock'));
+                
+                // Create a temporary textarea element to copy the raw code
+                const textArea = document.createElement('textarea');
+                textArea.value = codeBlock;  // Use the codeBlock variable for copying
+                document.body.appendChild(textArea);
+        
+                textArea.select();
+                document.execCommand('copy');
+        
+                document.body.removeChild(textArea);
+        
+                if (!event.target.classList.contains('copied')) {
+                    event.target.classList.add('copied');
+                    event.target.textContent = 'Copied!';
+                    setTimeout(() => {
+                        event.target.textContent = 'Copy';
+                        event.target.classList.remove('copied');
+                    }, 1500);
+                }
+            }
+        });
+        
+        
         
 
 

@@ -3,7 +3,7 @@ body {
     font-family: 'Roboto', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f8f9fa;
+    background-color: #F4FCFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -14,9 +14,9 @@ body {
 .container {
     width: 350px;
     padding: 25px;
-    background-color: #ffffff;
+    background-color: #e8f9ff;
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
+    /* border-radius: 10px; */
     text-align: center;
 }
 
@@ -64,7 +64,7 @@ body {
     padding: 12px;
     font-size: 16px;
     color: #ffffff;
-    background-color: #007bff;
+    background-color: #265B7F;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -72,7 +72,7 @@ body {
 }
 
 .key-handler button:hover {
-    background-color: #0056b3;
+    background-color: #193F58;
 }
 
 /* Note styling */
