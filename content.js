@@ -262,7 +262,7 @@ function handleRouteChange() {
     if (correctUrl()) {
         if(document.querySelector('.coding_list__V_ZOZ').classList.contains('coding_card_mod_active___Nidq')){
             data = dataProvider();
-            console.log(data);
+            // console.log(data);
         }
         addAiButton();
     } else {
@@ -583,6 +583,8 @@ function appendMessage(sender, message, container = null) {
     ? 'background-color: #2E3440; color: #f1f1f1;' // Dark theme style
     : 'background-color: #f5f5f5; color: #000000;'; // Light theme style
     if (sender === "You") {
+        message = escapeHtml(message);
+        console.log("Hello ########################")
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
             const escapedCode = escapeHtml(codeBlock);
             return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
@@ -590,6 +592,7 @@ function appendMessage(sender, message, container = null) {
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);
+            console.log("Something is baaad ##############");
             return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
         });
 
@@ -704,7 +707,7 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
             content: message.text,
         }));
 
-        console.log("Messages:", messages);
+        // console.log("Messages:", messages);
 
         // Make the API request
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
