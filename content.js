@@ -60,6 +60,29 @@ function dataProvider() {
     return data;
 }
 
+function getDarkTheme() {
+    const elements = document.getElementsByClassName('ant-switch d-flex mt-1 css-19gw05y ant-switch-checked');
+    return elements.length > 0;
+}
+
+const lightThemeColors = {
+    backgroundColor: "#fff",
+    textColor: "#000",
+    dragAreaBg: "#F4FCFF",
+    messageYouBg: "#f1f1f1",
+    messageAIbg: "#ddf6ff",
+    borderColor: "#A5E6FE",
+};
+
+const darkThemeColors = {
+    backgroundColor: "#1e1e1e",
+    textColor: "#e0e0e0",
+    dragAreaBg: "#333",
+    messageYouBg: "#2d2d2d",
+    messageAIbg: "#3d3d3d",
+    borderColor: "#555",
+};
+
 
 function addAiButton() {
     if (!correctUrl() || document.getElementById('ai-assistant-button')) return;
@@ -137,13 +160,15 @@ function createChatbox() {
     data = dataProvider();
     console.log(data);
 
+    let darkTheme = getDarkTheme() ? 1 : 0;
+
     // Initial styling of chatbox
     Object.assign(chatbox.style, {
         position: "fixed",
         bottom: "80px",
         left: "20px",
         width: "500px",
-        height: "730px",
+        height: "770px",
         overflow: "hidden",
         // paddingTop: "5px",
         backgroundColor: "#fff",
