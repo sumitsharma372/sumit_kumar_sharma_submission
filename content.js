@@ -4,6 +4,7 @@ let aiButtonObserver = null;
 let themeObserver = null;
 
 let ai_apiKey = '';
+let data = {};
 
 async function setup() {
     addAiButton();  
@@ -47,18 +48,31 @@ function observeThemeChanges() {
         return;
     }
 
-    // MutationObserver to detect changes in the class list
-    const observer = new MutationObserver(() => {
+    console.log("Theme Element found");
+
+    // Disconnect the existing observer if it exists
+    if (themeObserver) {
+        themeObserver.disconnect();
+    }
+
+    // Create a new MutationObserver to detect changes in the class list
+    themeObserver = new MutationObserver(() => {
         const isDarkTheme = themeSwitchElement.classList.contains('ant-switch-checked');
         console.log("Theme changed:", isDarkTheme ? "Dark" : "Light");
         updateChatboxTheme(isDarkTheme);
     });
 
-    observer.observe(themeSwitchElement, {
+    themeObserver.observe(themeSwitchElement, {
         attributes: true,
         attributeFilter: ['class'],
     });
+
+    // Initialize theme state immediately
+    const isDarkThemeInitial = themeSwitchElement.classList.contains('ant-switch-checked');
+    console.log("Initial Theme:", isDarkThemeInitial ? "Dark" : "Light");
+    updateChatboxTheme(isDarkThemeInitial);
 }
+
 
 
 function updateChatboxTheme(isDarkTheme) {
@@ -297,17 +311,22 @@ let previousPath = window.location.pathname;
 function handleRouteChange() {
     const currentPath = window.location.pathname;
 
+    // Check if the route has changed
     if (currentPath !== previousPath) {
-        previousPath = currentPath;
-        removeChatbox(); // Close the chatbox only if the route has changed.
+        console.log("Route changed from:", previousPath, "to:", currentPath);
+        previousPath = currentPath; // Update the previous path
+        removeChatbox(); // Close the chatbox only if the route has changed
     }
 
+    // Handle theme changes and AI button based on the current route
     if (correctUrl()) {
-        if(document.querySelector('.coding_list__V_ZOZ').classList.contains('coding_card_mod_active___Nidq')){
+        const codingListElement = document.querySelector('.coding_list__V_ZOZ');
+        if (codingListElement && codingListElement.classList.contains('coding_card_mod_active___Nidq')) {
             data = dataProvider();
             // console.log(data);
         }
         addAiButton();
+        observeThemeChanges(); // Re-initialize theme observer when on a correct route
     } else {
         removeAiButton();
     }
