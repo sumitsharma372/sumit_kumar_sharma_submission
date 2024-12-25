@@ -87,6 +87,43 @@ function observeThemeChanges() {
 
 
 
+function getScrollbarStyles(darkTheme) {
+    return `
+        #messages-container::-webkit-scrollbar {
+            width: 6px; /* Sets the width of the scrollbar */
+        }let styleSheet = document.getElementById("scrollbar-styles");
+
+    if (!styleSheet) {
+        // Create the style element if it doesn't exist
+        styleSheet = document.createElement("style");
+        styleSheet.id = "scrollbar-styles";
+        document.head.appendChild(styleSheet);
+    }
+
+        #messages-container::-webkit-scrollbar-thumb {
+            background-color: ${darkTheme ? "#2B384E" : "#badce8"}; /* Thumb color based on theme */
+            border-radius: 10px; /* Rounds the corners of the thumb */
+        }
+
+        #messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: ${darkTheme ? "#161D29" : "#badce8"}; /* Darkens the thumb when hovered */
+        }
+
+        .code-container pre::-webkit-scrollbar {
+            height: 6px; /* Sets the height of the horizontal scrollbar */
+        }
+
+        .code-container pre::-webkit-scrollbar-thumb {
+            background-color: ${darkTheme ? "#2B384E" : "#badce8"}; /* Thumb color based on theme */
+            border-radius: 10px; /* Rounds the corners of the thumb */
+        }
+
+        .code-container pre::-webkit-scrollbar-thumb:hover {
+            background-color: ${darkTheme ? "#161D29" : "#badce8"}; /* Darkens the thumb when hovered */
+        }
+    `;
+}
+
 function updateChatboxTheme(isDarkTheme) {
     const chatbox = document.getElementById('ai-chatbox');
     if (!chatbox) return;
@@ -158,36 +195,18 @@ function updateChatboxTheme(isDarkTheme) {
     const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
     aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
 
-    const styleSheet = document.getElementById("scrollbar-styles");
+    let styleSheet = document.getElementById("scrollbar-styles");
 
-    // Update the content of the existing style tag
-    styleSheet.textContent = `
-        #messages-container::-webkit-scrollbar {
-            width: 6px; /* Sets the width of the scrollbar */
-        }
+    if (styleSheet) {
+        styleSheet.remove(); // Remove the old styleSheet if it exists
+    }
 
-        #messages-container::-webkit-scrollbar-thumb {
-            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
-            border-radius: 10px; /* Rounds the corners of the thumb */
-        }
+    styleSheet = document.createElement("style");
+    styleSheet.id = "scrollbar-styles";
 
-        #messages-container::-webkit-scrollbar-thumb:hover {
-            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
-        }
+    styleSheet.textContent = getScrollbarStyles(isDarkTheme); // Set the new styles
 
-        .code-container pre::-webkit-scrollbar {
-            height: 6px; /* Sets the height of the horizontal scrollbar */
-        }
-
-        .code-container pre::-webkit-scrollbar-thumb {
-            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
-            border-radius: 10px; /* Rounds the corners of the thumb */
-        }
-
-        .code-container pre::-webkit-scrollbar-thumb:hover {
-            background-color: ${isDarkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
-        }
-    `;
+    document.head.appendChild(styleSheet);
 
     const codeLanguage = document.querySelectorAll('.code-language');
     preElements.forEach((codeLan) => {
@@ -511,41 +530,17 @@ async function createChatbox() {
     });
 
     // WebKit-specific scrollbar hiding
+    let styleSheet = document.getElementById("scrollbar-styles");
 
-    // "#2E3440" : "#DDF6FF
-    // "#292d36" : "#badce8"
-    const styleSheet = document.createElement("style");
-    styleSheet.id = "scrollbar-styles"
-
-    styleSheet.textContent = `
-    #messages-container::-webkit-scrollbar {
-        width: 6px; /* Sets the width of the scrollbar */
+    if (styleSheet) {
+        styleSheet.remove(); // Remove the old styleSheet if it exists
     }
-
-    #messages-container::-webkit-scrollbar-thumb {
-        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
-        border-radius: 10px; /* Rounds the corners of the thumb */
-    }
-
-    #messages-container::-webkit-scrollbar-thumb:hover {
-        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
-    }
-
-    .code-container pre::-webkit-scrollbar {
-        height: 6px; /* Sets the height of the horizontal scrollbar */
-    }
-
-    .code-container pre::-webkit-scrollbar-thumb {
-        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Thumb color based on theme */
-        border-radius: 10px; /* Rounds the corners of the thumb */
-    }
-
-    .code-container pre::-webkit-scrollbar-thumb:hover {
-        background-color: ${darkTheme ? "#292d36" : "#badce8"}; /* Darkens the thumb when hovered */
-    }
-`;
-
-
+    
+    styleSheet = document.createElement("style");
+    styleSheet.id = "scrollbar-styles";
+    
+    styleSheet.textContent = getScrollbarStyles(darkTheme); // Set the new styles
+    
     document.head.appendChild(styleSheet);
 
     let instructions = systemPrompt(data);
