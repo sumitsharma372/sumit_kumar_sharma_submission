@@ -20,7 +20,7 @@ async function setup() {
     }
 
     if (!themeObserver) {
-        console.log("Creating observer for theme changes...");
+        // console.log("Creating observer for theme changes...");
         observeThemeChanges();
     }
     injectScript();
@@ -70,7 +70,7 @@ function observeThemeChanges() {
     // Create a new MutationObserver to detect changes in the class list
     themeObserver = new MutationObserver(() => {
         const isDarkTheme = themeSwitchElement.classList.contains('ant-switch-checked');
-        console.log("Theme changed:", isDarkTheme ? "Dark" : "Light");
+        // console.log("Theme changed:", isDarkTheme ? "Dark" : "Light");
         updateChatboxTheme(isDarkTheme);
     });
 
@@ -270,7 +270,9 @@ function formatProblem(problem) {
       hints: hintsWithoutSolution ? JSON.stringify(hintsWithoutSolution,null,4) : null, // Stringify the hints object without solution_approach
       solution_approach: solution_approach || null, // Keep solution_approach as a separate field
       editorial_code_code: problem?.editorial_code?.[0]?.code || null,
-      editorial_code_language: problem?.editorial_code?.[0]?.language || null
+      editorial_code_language: problem?.editorial_code?.[0]?.language || null,
+      code_written_by_me: "",
+      coding_language_used_by_me: ""
     };
 }
 
@@ -357,12 +359,6 @@ function handleRouteChange() {
 
     // Handle theme changes and AI button based on the current route
     if (correctUrl()) {
-        let temp_data = {};
-        const codingListElement = document.querySelector('.coding_list__V_ZOZ');
-        if (codingListElement && codingListElement.classList.contains('coding_card_mod_active___Nidq')) {
-            data = dataProvider();
-            // console.log(data);
-        }
         window.addEventListener('xhrDataFetched', (event) => {
             interceptedData = JSON.parse(event.detail.response)?.data; // Store the intercepted data
             // console.log("Intercepted Data:", interceptedData);
@@ -373,8 +369,6 @@ function handleRouteChange() {
                 data: interceptedData,
             });
         });   
-        data = formatProblem(interceptedData);
-        console.log(data);
         addAiButton();
         observeThemeChanges(); // Re-initialize theme observer when on a correct route
     } else {
@@ -391,6 +385,44 @@ function toggleChatbox() {
     }
 }
 
+function systemPrompt(data) {
+    return `
+    You are an AI assistant designed to guide me through coding problems. Your role is to foster independent thinking by offering hints, breaking down the problem, and suggesting approaches—NOT providing the solution directly.
+
+    Here’s what you need to keep in mind:
+    - If I ask for the solution, **gently remind me to try solving it myself first**. Your goal is to guide me to the solution, not give it to me outright.
+    - If I get stuck after multiple attempts (more than three tries), you may offer the final solution, but ONLY as a **last resort**.
+    - **Stay focused on the problem at hand**. If I try to deviate from the coding problem (e.g., discussing unrelated topics or asking for non-coding advice), politely steer the conversation back to the task. 
+    - Your responses should focus strictly on the **problem statement and coding concepts**. If I try to talk about something unrelated, gently remind me to focus on the coding problem.
+
+    Please make sure that:
+    - **Hints should never provide the solution** directly. Instead, offer conceptual advice, suggest breaking the problem into smaller parts, or help identify patterns that could lead to a solution.
+    - If there are existing hints or relevant strategies in the provided data (like 'hints' or 'solution_approach'), you may use them to guide me. **Don’t give too much away**, let me figure things out with your guidance.
+    - If I ask for code directly, **reject the request** in a polite way, reminding me that learning through hints and thinking critically is key. Suggest relevant hints from the data or provide your own that can lead to a solution.
+    - **Only after a clear attempt** and exploration of hints should you provide the solution approach, and at the very last, the code itself.
+
+    Here's the problem description that you should use as context for all responses:
+
+    ${JSON.stringify(data, null, 4)}
+
+    Keep in mind:
+    - Your role is to be a guide, not a solution provider. Offer strategic thinking, relevant concepts, and break down the problem in a way that helps me think critically.
+    - Help me iterate over potential solutions. **Don't skip steps**.
+    - If I deviate from the problem, **politely steer me back** to the task. Remind me that focusing on the problem is crucial for learning.
+
+    If I ask for hints, please provide ones that are directly relevant to solving the problem, such as:
+    - Identifying logical steps to break down the problem.
+    - Recognizing algorithms or techniques that might apply.
+    - Exploring efficient solutions without revealing the complete code.
+
+    If the problem requires specific knowledge about algorithms, data structures, or mathematical concepts, feel free to suggest approaches or identify resources that might be useful. **But always stay within the context of the coding problem**—no off-topic discussions.
+
+    **Reminder**: Keep the focus on learning and problem-solving. Always encourage me to stay focused on the coding task at hand.
+    `
+}
+
+
+
 let clickListenerAdded = false;
 async function createChatbox() {
     ai_apiKey = await getApiKey();
@@ -403,11 +435,14 @@ async function createChatbox() {
     chatbox.id = "ai-chatbox";
 
     // data = dataProvider();
-    console.log("Hello chatbox")
-    if(!interceptedData){
-        console.log("No intercepted data found")
-    }else console.log(interceptedData);
+    data = formatProblem(interceptedData);
     // console.log(data);
+
+
+    // if(!interceptedData){
+    //     console.log("No intercepted data found")
+    // }else console.log(interceptedData);
+    // // console.log(data);
 
     let darkTheme = getDarkTheme() ? 1 : 0;
 
@@ -505,64 +540,7 @@ async function createChatbox() {
 
     document.head.appendChild(styleSheet);
 
-
-
-    const instructions = `
-        You are acting as an AI assistant to help me with coding problems. Your role is to assist me in understanding the problem, offer helpful hints, and suggest approaches to find a solution.
-        
-        It's important that you guide me in a way that encourages independent thinking and problem-solving. Rather than simply providing the solution, help me develop my skills by suggesting logical steps, breaking down the problem, or pointing out any relevant concepts that might help me. 
-        Your goal is to foster learning, so if I ask for the solution directly, kindly remind me to give it a try first. If I feel completely stuck after multiple attempts (more than three times), you may provide the solution, but this should be the last resort. 
-
-        In case I share code with you, please help me identify logical errors, syntax mistakes, or areas that need improvement. Be direct and clear in your explanations, but also considerate of my learning process.
-        
-        Here’s the problem statement, which will be provided in triple backticks:
-
-        ${JSON.stringify(data,null,4)}
-
-        Keep in mind that my primary goal is to learn. So, whenever you provide a hint, try to make it clear how that hint connects to the overall solution. Also, make sure you understand the underlying topic related to the problem so you can offer relevant advice. 
-        
-        Here are a few strategies you might suggest:
-        - Breaking the problem into smaller, manageable parts.
-        - Drawing on fundamental concepts or algorithms that could apply to the problem.
-        - Offering insights into efficient ways of approaching a solution, without giving away the final code.
-
-        Feel free to ask clarifying questions if needed. The aim is to make this a collaborative process where I am guided towards the solution, not simply given the answer. Let's work together to solve this problem and improve my coding skills!
-
-        Always remember: your role is to be a guide, not a solution provider. Make sure your hints or advice are geared toward helping me understand and grow my problem-solving abilities.
-    `;
-    // const instructions = `
-    //     You are acting as an AI assistant to help me with coding problems. Your role is to assist me in understanding the problem, offer helpful hints, and suggest approaches to find a solution.
-        
-    //     It's important that you guide me in a way that encourages independent thinking and problem-solving. Rather than simply providing the solution, help me develop my skills by suggesting logical steps, breaking down the problem, or pointing out any relevant concepts that might help me. 
-    //     Your goal is to foster learning, so if I ask for the solution directly, kindly remind me to give it a try first. If I feel completely stuck after multiple attempts (more than three times), you may provide the solution, but this should be the last resort. 
-
-    //     In case I share code with you, please help me identify logical errors, syntax mistakes, or areas that need improvement. Be direct and clear in your explanations, but also considerate of my learning process.
-        
-    //     Here’s the problem statement, which will be provided in triple backticks:
-
-    //     \`\`\`
-    //     Problem Name: ${data.problemName}
-    //     Problem Description: ${data.description}
-    //     Input Format: ${data.inputFormat}
-    //     Output Format: ${data.outputFormat}
-    //     Constraints: ${data.constraints}
-    //     Sample Input: ${data.sampleInput}
-    //     Sample Output: ${data.sampleOutput}
-    //     \`\`\`
-
-    //     Keep in mind that my primary goal is to learn. So, whenever you provide a hint, try to make it clear how that hint connects to the overall solution. Also, make sure you understand the underlying topic related to the problem so you can offer relevant advice. 
-        
-    //     Here are a few strategies you might suggest:
-    //     - Breaking the problem into smaller, manageable parts.
-    //     - Drawing on fundamental concepts or algorithms that could apply to the problem.
-    //     - Offering insights into efficient ways of approaching a solution, without giving away the final code.
-
-    //     Feel free to ask clarifying questions if needed. The aim is to make this a collaborative process where I am guided towards the solution, not simply given the answer. Let's work together to solve this problem and improve my coding skills!
-
-    //     Always remember: your role is to be a guide, not a solution provider. Make sure your hints or advice are geared toward helping me understand and grow my problem-solving abilities.
-    // `;
-
-
+    let instructions = systemPrompt(data);
 
     const id = data.id;
     const temp = localStorage.getItem(id);
@@ -573,6 +551,8 @@ async function createChatbox() {
         chatHistory.push({ sender: "You", text: instructions });
         chatHistory.push({ sender: "AI", text: "How may I assist you?" });
     }
+
+    // console.log(chatHistory)
 
 
     // Repopulate chat history
@@ -730,7 +710,6 @@ function removeChatbox() {
         chatbox.remove();
     }
 }
-// let chatHistory = []; // Store the chat history
 
 async function handleSendMessage(id, chatHistory) {
     const input = document.getElementById('chat-input');
@@ -744,8 +723,16 @@ async function handleSendMessage(id, chatHistory) {
 
     try {
         const apiKey = await getApiKey();
-        console.log(apiKey);
+        // console.log(apiKey);
+        const numId = data.id.split('-').pop();
+        const codeLan = document.getElementsByClassName('coding_select__UjxFb')[0].textContent
+        const key = `course_7462_${numId}_${codeLan}`;
+        const myCode = localStorage.getItem(key) || "";
+        // console.log(myCode)
+        data["code_written_by_me"] = myCode;
+        data["coding_language_used_by_me"] = codeLan
 
+        chatHistory[0].text = systemPrompt(data);
         const response = await processMessageWithGroqAPI(chatHistory, ai_apiKey);
 
         if (response) {
@@ -755,7 +742,6 @@ async function handleSendMessage(id, chatHistory) {
             appendMessage("AI", "Sorry, I couldn't process your request.");
         }
 
-        // Save updated chat history in localStorage
         localStorage.setItem(id, JSON.stringify(chatHistory));
     } catch (error) {
         console.error("Error retrieving API key:", error);
@@ -771,7 +757,6 @@ function appendMessage(sender, message, container = null) {
 
     const isDarkTheme = getDarkTheme();
     const themeColors = isDarkTheme ? darkThemeColors : lightThemeColors;
-    // Escape HTML to prevent breaking HTML structure inside code blocks
     function escapeHtml(str) {
         return str.replace(/[&<>"']/g, (char) => {
             switch (char) {
@@ -785,7 +770,6 @@ function appendMessage(sender, message, container = null) {
         });
     }
 
-    // If the sender is "You", skip formatting and just preserve code blocks as is
     const codeBlockStyle = isDarkTheme 
     ? 'background-color: #2E3440; color: #f1f1f1;' // Dark theme style
     : 'background-color: #f5f5f5; color: #000000;'; // Light theme style
@@ -946,7 +930,7 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
 
         // Function to estimate token count (rough approximation for demonstration)
         const estimateTokens = (text) => {
-            // One common estimate: approximately 4 characters per token (including spaces)
+            // One common estimate: approximately 3 characters per token (including spaces)
             return Math.ceil(text.length / 3);
         };
 
@@ -962,6 +946,7 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
         }
 
         // Traverse the copied chat history in reverse order, adding messages until the token limit is reached
+        console.log(chatHistory)
         for (let i = modifiedHistory.length - 1; i >= 0; i--) {
             const message = modifiedHistory[i];
             const messageTokens = estimateTokens(message.text);
