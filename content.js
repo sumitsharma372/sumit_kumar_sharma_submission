@@ -341,6 +341,7 @@ function toggleChatbox() {
     }
 }
 
+let clickListenerAdded = false;
 async function createChatbox() {
     ai_apiKey = await getApiKey();
     if (!ai_apiKey) {
@@ -603,6 +604,20 @@ async function createChatbox() {
         isDragging = false;
         chatbox.style.cursor = "default"; // Revert cursor to default when not dragging
     });
+
+    if (!clickListenerAdded) {
+        // Detect clicks outside the chatbox and close it
+        document.addEventListener('click', (e) => {
+            const chatbox = document.getElementById('ai-chatbox');
+            const clickedOutside = !chatbox.contains(e.target); // Check if click is outside chatbox
+            const isSwitchClicked = e.target.closest(".ant-switch.d-flex.mt-1.css-19gw05y"); // Check if the click is on the specific element
+            
+            if (clickedOutside && !isSwitchClicked) {
+                removeChatbox(); // Close the chatbox if the click is outside and not on the switch
+            }
+        });
+        clickListenerAdded = true; // Set flag to true to prevent adding the listener again
+    }
 
     updateChatboxTheme(darkTheme);
 }
