@@ -5,6 +5,8 @@ let themeObserver = null;
 
 let ai_apiKey = '';
 let data = {};
+let interceptedData = null;
+
 
 async function setup() {
     addAiButton();  
@@ -21,6 +23,16 @@ async function setup() {
         console.log("Creating observer for theme changes...");
         observeThemeChanges();
     }
+    injectScript();
+}
+
+function injectScript() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('inject.js'); // Load the `inject.js` file from the extension
+    script.onload = function () {
+        this.remove(); // Clean up the script element after execution
+    };
+    (document.head || document.documentElement).appendChild(script);
 }
 
 
@@ -238,6 +250,31 @@ function dataProvider() {
     return data;
 }
 
+function formatProblem(problem) {
+    const hints = problem?.hints || {};
+    const { solution_approach, ...hintsWithoutSolution } = hints;
+    const proburl = window.location.href;
+    const id = getIdFromUrl(proburl);
+    
+    return {
+      id: id,
+      problem_name: problem?.title || null,
+      problem_description: problem?.body || null,
+      input_format: problem?.input_format || null,
+      output_format: problem?.output_format || null,
+      sample_input: problem?.samples?.[0]?.input || null,
+      sample_output: problem?.samples?.[0]?.output || null,
+      constraints: problem?.constraints || null,
+      time_limit: problem?.time_limit_sec || null,
+      memory_limit: problem?.memory_limit_mb || null,
+      hints: hintsWithoutSolution ? JSON.stringify(hintsWithoutSolution,null,4) : null, // Stringify the hints object without solution_approach
+      solution_approach: solution_approach || null, // Keep solution_approach as a separate field
+      editorial_code_code: problem?.editorial_code?.[0]?.code || null,
+      editorial_code_language: problem?.editorial_code?.[0]?.language || null
+    };
+}
+
+
 function getDarkTheme() {
     const elements = document.getElementsByClassName('ant-switch d-flex mt-1 css-19gw05y ant-switch-checked');
     return elements.length > 0;
@@ -320,11 +357,24 @@ function handleRouteChange() {
 
     // Handle theme changes and AI button based on the current route
     if (correctUrl()) {
+        let temp_data = {};
         const codingListElement = document.querySelector('.coding_list__V_ZOZ');
         if (codingListElement && codingListElement.classList.contains('coding_card_mod_active___Nidq')) {
             data = dataProvider();
             // console.log(data);
         }
+        window.addEventListener('xhrDataFetched', (event) => {
+            interceptedData = JSON.parse(event.detail.response)?.data; // Store the intercepted data
+            // console.log("Intercepted Data:", interceptedData);
+        
+            // Send the intercepted data to the background script if needed
+            chrome.runtime.sendMessage({
+                type: "interceptedRequest",
+                data: interceptedData,
+            });
+        });   
+        data = formatProblem(interceptedData);
+        console.log(data);
         addAiButton();
         observeThemeChanges(); // Re-initialize theme observer when on a correct route
     } else {
@@ -353,6 +403,10 @@ async function createChatbox() {
     chatbox.id = "ai-chatbox";
 
     // data = dataProvider();
+    console.log("Hello chatbox")
+    if(!interceptedData){
+        console.log("No intercepted data found")
+    }else console.log(interceptedData);
     // console.log(data);
 
     let darkTheme = getDarkTheme() ? 1 : 0;
@@ -463,14 +517,7 @@ async function createChatbox() {
         
         Here’s the problem statement, which will be provided in triple backticks:
 
-        \`\`\`
-        Problem Name: ${data.problemName}
-        Problem Description: ${data.description}
-        Input Format: ${data.inputFormat}
-        Output Format: ${data.outputFormat}
-        Sample Input: ${data.sampleInput}
-        Sample Output: ${data.sampleOutput}
-        \`\`\`
+        ${JSON.stringify(data,null,4)}
 
         Keep in mind that my primary goal is to learn. So, whenever you provide a hint, try to make it clear how that hint connects to the overall solution. Also, make sure you understand the underlying topic related to the problem so you can offer relevant advice. 
         
@@ -483,6 +530,37 @@ async function createChatbox() {
 
         Always remember: your role is to be a guide, not a solution provider. Make sure your hints or advice are geared toward helping me understand and grow my problem-solving abilities.
     `;
+    // const instructions = `
+    //     You are acting as an AI assistant to help me with coding problems. Your role is to assist me in understanding the problem, offer helpful hints, and suggest approaches to find a solution.
+        
+    //     It's important that you guide me in a way that encourages independent thinking and problem-solving. Rather than simply providing the solution, help me develop my skills by suggesting logical steps, breaking down the problem, or pointing out any relevant concepts that might help me. 
+    //     Your goal is to foster learning, so if I ask for the solution directly, kindly remind me to give it a try first. If I feel completely stuck after multiple attempts (more than three times), you may provide the solution, but this should be the last resort. 
+
+    //     In case I share code with you, please help me identify logical errors, syntax mistakes, or areas that need improvement. Be direct and clear in your explanations, but also considerate of my learning process.
+        
+    //     Here’s the problem statement, which will be provided in triple backticks:
+
+    //     \`\`\`
+    //     Problem Name: ${data.problemName}
+    //     Problem Description: ${data.description}
+    //     Input Format: ${data.inputFormat}
+    //     Output Format: ${data.outputFormat}
+    //     Constraints: ${data.constraints}
+    //     Sample Input: ${data.sampleInput}
+    //     Sample Output: ${data.sampleOutput}
+    //     \`\`\`
+
+    //     Keep in mind that my primary goal is to learn. So, whenever you provide a hint, try to make it clear how that hint connects to the overall solution. Also, make sure you understand the underlying topic related to the problem so you can offer relevant advice. 
+        
+    //     Here are a few strategies you might suggest:
+    //     - Breaking the problem into smaller, manageable parts.
+    //     - Drawing on fundamental concepts or algorithms that could apply to the problem.
+    //     - Offering insights into efficient ways of approaching a solution, without giving away the final code.
+
+    //     Feel free to ask clarifying questions if needed. The aim is to make this a collaborative process where I am guided towards the solution, not simply given the answer. Let's work together to solve this problem and improve my coding skills!
+
+    //     Always remember: your role is to be a guide, not a solution provider. Make sure your hints or advice are geared toward helping me understand and grow my problem-solving abilities.
+    // `;
 
 
 

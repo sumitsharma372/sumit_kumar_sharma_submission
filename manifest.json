@@ -35,7 +35,8 @@
         "assets/drag.png",
         "assets/send.png",
         "assets/send_light.png",
-        "assets/drag_white.png"
+        "assets/drag_white.png",
+        "inject.js"
       ],
       "matches" : ["<all_urls>"]
     }
