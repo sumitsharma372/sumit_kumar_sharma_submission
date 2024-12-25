@@ -48,7 +48,7 @@ function observeThemeChanges() {
         return;
     }
 
-    console.log("Theme Element found");
+    // console.log("Theme Element found");
 
     // Disconnect the existing observer if it exists
     if (themeObserver) {
@@ -69,7 +69,7 @@ function observeThemeChanges() {
 
     // Initialize theme state immediately
     const isDarkThemeInitial = themeSwitchElement.classList.contains('ant-switch-checked');
-    console.log("Initial Theme:", isDarkThemeInitial ? "Dark" : "Light");
+    // console.log("Initial Theme:", isDarkThemeInitial ? "Dark" : "Light");
     updateChatboxTheme(isDarkThemeInitial);
 }
 
@@ -591,7 +591,26 @@ async function createChatbox() {
         offsetX = e.clientX - chatbox.getBoundingClientRect().left;
         offsetY = e.clientY - chatbox.getBoundingClientRect().top;
         chatbox.style.cursor = "grabbing"; // Change cursor to grabbing when dragging
-    });
+    });function interceptFetch() {
+        const originalFetch = window.fetch;
+        
+        window.fetch = async function (...args) {
+            const response = await originalFetch(...args);
+            
+            // Capture data from the API response
+            const clonedResponse = response.clone();
+            clonedResponse.json().then((data) => {
+                console.log("Captured fetch response:", data);
+                // Store the intercepted data in Chrome storage
+                chrome.storage.local.set({ apiData: data });
+            }).catch(error => {
+                console.error("Error parsing fetch response:", error);
+            });
+    
+            // Return the original response
+            return response;
+        };
+    }
 
     document.addEventListener("mousemove", (e) => {
         if (isDragging) {
@@ -608,7 +627,9 @@ async function createChatbox() {
     if (!clickListenerAdded) {
         // Detect clicks outside the chatbox and close it
         document.addEventListener('click', (e) => {
-            const chatbox = document.getElementById('ai-chatbox');
+            const chatbox = document.getElementById('ai-chatbox'); // Get the chatbox element
+            if (!chatbox) return; // If chatbox is not present, exit early
+            
             const clickedOutside = !chatbox.contains(e.target); // Check if click is outside chatbox
             const isSwitchClicked = e.target.closest(".ant-switch.d-flex.mt-1.css-19gw05y"); // Check if the click is on the specific element
             
@@ -620,6 +641,7 @@ async function createChatbox() {
     }
 
     updateChatboxTheme(darkTheme);
+    scrollToBottom();
 }
 
 
@@ -853,9 +875,17 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
         let totalTokens = 0;
         let truncatedHistory = [];
 
-        // Traverse chat history in reverse order, adding messages until the token limit is reached
-        for (let i = chatHistory.length - 1; i >= 0; i--) {
-            const message = chatHistory[i];
+        // Create a copy of the chat history to avoid modifying the original
+        const modifiedHistory = [...chatHistory];
+
+        // Convert the first message to a system role in the copied history
+        if (modifiedHistory.length > 0) {
+            modifiedHistory[0] = { ...modifiedHistory[0], role: "system" };
+        }
+
+        // Traverse the copied chat history in reverse order, adding messages until the token limit is reached
+        for (let i = modifiedHistory.length - 1; i >= 0; i--) {
+            const message = modifiedHistory[i];
             const messageTokens = estimateTokens(message.text);
 
             // Check if adding this message exceeds the token limit
@@ -868,13 +898,14 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
         }
 
         // Log the total tokens for debugging
-        console.log("Total tokens in the message history:", totalTokens);
 
         // Prepare the messages in the format required by Groq API
         const messages = truncatedHistory.map((message) => ({
-            role: message.sender === "You" ? "user" : "assistant",
+            role: message.role || (message.sender === "You" ? "user" : "assistant"),
             content: message.text,
         }));
+
+        console.log(messages)
 
         // Make the API request
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
