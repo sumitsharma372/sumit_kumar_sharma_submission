@@ -159,14 +159,11 @@ function updateChatboxTheme(isDarkTheme) {
     // Update each message's style
     const messageDivs = document.querySelectorAll('.chat-message');
     messageDivs.forEach((messageDiv) => {
+        messageDiv.style.color = isDarkTheme ? "#E9E9EB" : "#2A2E34";
         if (messageDiv.classList.contains('from-you')) {
             messageDiv.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f1f1f1';
-            messageDiv.style.color = isDarkTheme ? '#f1f1f1' : '#000000';
-            messageDiv.style.borderWidth = isDarkTheme ? '1px' : '2px'; // Decrease border width in dark theme
         } else {
             messageDiv.style.backgroundColor = isDarkTheme ? '#2b384e' : '#ddf6ff';
-            messageDiv.style.color = isDarkTheme ? '#ffffff' : '#000000';
-            messageDiv.style.borderWidth = isDarkTheme ? '1px' : '2px'; // Decrease border width in dark theme
         }
         messageDiv.style.borderColor = themeColors.borderColor
     });
@@ -234,6 +231,11 @@ function updateChatboxTheme(isDarkTheme) {
 
     const closeBtn = document.getElementById("ai-close-button");
     closeBtn.style.color = isDarkTheme ? "#4d6182":"#9ee0f7";
+
+    const responseTaglines = document.querySelectorAll('.response-tagline');
+    responseTaglines.forEach(tag => {
+        tag.style.backgroundColor = isDarkTheme ? '#283247' : '#f5f5f5';
+    })
 }
 
 
@@ -439,6 +441,7 @@ function systemPrompt(data) {
     - Stay **strictly focused** on the coding problem. Ignore unrelated topics and redirect me back to the task.
     - Responses should focus on **concepts** and **problem-solving strategies**, not code.
     - In case of code review, refer to the code written by me till now in information below
+    - (Some Latex might be present in the information provided below, but you should try to understand it and in the response there should be no latex symbols)
 
     Make sure:
     - Hints must not provide direct solutions. Instead, offer guidance on breaking down the problem or identifying patterns.
@@ -927,14 +930,14 @@ function appendMessage(sender, message, container = null) {
     if (sender === "You") {
         message = escapeHtml(message);
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
-            const escapedCode = escapeHtml(codeBlock);
-            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${escapedCode}</pre>`;
+            // const escapedCode = escapeHtml(codeBlock);
+            return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${codeBlock}</pre>`;
         });
 
-        message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
-            const escapedCode = escapeHtml(inlineCode);
-            return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
-        });
+        // message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
+        //     const escapedCode = escapeHtml(inlineCode);
+        //     return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+        // });
 
         // Handle line breaks for "You" (newlines to <br> tags)
         message = message.replace(/\n/g, '<br>');
@@ -984,7 +987,7 @@ function appendMessage(sender, message, container = null) {
 
         message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
             const escapedCode = escapeHtml(inlineCode);
-            return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
+            return `<code class="response-tagline" style="background-color: ${isDarkTheme ? '#283247' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
         });
 
         // Prevent headings inside code blocks by temporarily replacing code block text with placeholders
@@ -1031,7 +1034,7 @@ function appendMessage(sender, message, container = null) {
             : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
         borderRadius: "5px",
         backgroundColor: sender === "You" ? themeColors.messageYouBg : themeColors.messageAIbg,
-        color: themeColors.textColor,
+        color: isDarkTheme ? "#E9E9EB" : "#2A2E34",
         alignSelf: sender === "You" ? "flex-start" : "flex-end",
         border: `1px solid ${themeColors.borderColor}`
     });
