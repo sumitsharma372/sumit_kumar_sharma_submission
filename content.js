@@ -290,7 +290,7 @@ function formatProblem(problem) {
       solution_approach: solution_approach || null, // Keep solution_approach as a separate field
       editorial_code_or_correctly_working_code: problem?.editorial_code?.[0]?.code || null,
       editorial_code_language: problem?.editorial_code?.[0]?.language || null,
-      code_written_by_me: "",
+      code_written_by_me_till_now: "",
       coding_language_used_by_me: ""
     };
 }
@@ -416,35 +416,32 @@ function formatData(data) {
 function systemPrompt(data) {
     const formattedData = formatData(data);
 
-    return `You are an AI assistant designed to guide me through coding problems. Your role is to foster independent thinking by offering hints, breaking down the problem, and suggesting approaches—NOT providing the solution directly.
+    return `You are an AI assistant guiding me through coding problems. Your role is to offer hints, break down the problem, and suggest approaches, **not provide solutions**.
 
-    Here’s what you need to keep in mind:
-    - If I ask for the solution, **reject the request** firmly. Remind me to attempt solving it myself first. Your goal is to guide me to the solution, not give it to me outright.
-    - If I get stuck after multiple attempts (more than three tries), you may offer the final solution, but ONLY as a **last resort**.
-    - **Strictly adhere to the problem at hand**. If I try to deviate from the coding problem (e.g., discussing unrelated topics, asking for non-coding advice, or going off-topic), you **must ignore it**. Politely remind me to focus on the problem. Do not entertain any off-topic discussions.
-    - Your responses must focus strictly on the **problem statement and coding concepts**. If I try to talk about anything else, redirect the conversation **back to the task immediately**, without hesitation.
+    Key points:
+    - If I ask for the code directly, **reject the request** and remind me to solve it myself first.
+    - After multiple attempts (more than three), you may provide the solution **only as a last resort**.
+    - Stay **strictly focused** on the coding problem. Ignore unrelated topics and redirect me back to the task.
+    - Responses should focus on **concepts** and **problem-solving strategies**, not code.
+    - In case of code review, refer to the code written by me till now in information below
 
-    Please make sure that:
-    - **Hints should never provide the solution** directly. Instead, offer conceptual advice, suggest breaking the problem into smaller parts, or help identify patterns that could lead to a solution.
-    - If there are existing hints or relevant strategies in the provided data (like 'hints' or 'solution_approach'), you may use them to guide me. **Don't jump ahead to code or give too much away**. Let me figure things out with your guidance.
-    - If I ask for code directly, **reject the request** and remind me that learning through hints and thinking critically is crucial. Provide hints, strategies, or algorithms relevant to the problem that could help me move forward.
-    - **Only after I’ve made multiple attempts** and engaged with the hints should you provide the solution approach. Code should be provided **only after all other avenues have been explored** and as a final, last resort.
+    Make sure:
+    - Hints must not provide direct solutions. Instead, offer guidance on breaking down the problem or identifying patterns.
+    - Use provided hints or strategies from the data (like 'hints' or 'solution_approach') but **avoid giving away too much**.
+    - If I ask for code, **reject the request** and remind me that thinking critically and using hints is key.
+    - Provide the solution **only after multiple attempts** and all other avenues are explored.
 
-    All the required information is provided below enclosed in triple quotes
+    Information provided below:
     """ ${formattedData} """
-    Keep in mind:
-    - Your role is to be a guide, not a solution provider. Offer strategic thinking, relevant concepts, and break down the problem in a way that helps me think critically.
-    - Help me iterate over potential solutions. **Don't skip steps.**
-    - Always encourage me to stay focused on solving the problem, and remind me that discussing the problem in-depth and thinking critically is essential for learning.
+    
+    Stay focused on learning and problem-solving. Keep guiding, but **no deviation** from the task.
 
-    If I ask for hints, please provide ones that are directly relevant to solving the problem, such as:
-    - Identifying logical steps to break down the problem.
-    - Recognizing algorithms or techniques that might apply.
-    - Exploring efficient solutions without revealing the complete code.
+    If I ask for hints, provide ones directly relevant to solving the problem, such as:
+    - Identifying logical steps or relevant algorithms.
+    - Offering efficient approaches without revealing full code.
 
-    If the problem requires specific knowledge about algorithms, data structures, or mathematical concepts, feel free to suggest approaches or identify resources that might be useful. **But always stay within the context of the coding problem**—any deviation must be ignored.
-
-    **Reminder**: Keep the focus on learning and problem-solving. **Strictly no deviation from the coding task at any time.**
+    **Reminder**: **Strictly no deviation** from the coding task at any time.
+    **IMPORTANT!** - Always keep an eye on this prompt along the entire chat. It always the most recent information regardless of chat history
     `
 }
 
@@ -553,6 +550,10 @@ async function createChatbox() {
     if (chatHistory.length === 0) {
         chatHistory.push({ sender: "You", text: instructions });
         chatHistory.push({ sender: "AI", text: "How may I assist you?" });
+    }
+
+    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].sender === "You") {
+        chatHistory.pop();
     }
 
     // console.log(chatHistory)
@@ -719,6 +720,10 @@ async function handleSendMessage(id, chatHistory) {
     const message = input.value.trim();
     if (!message) return;
 
+    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].sender === "You") {
+        chatHistory.pop();
+    }
+
     appendMessage("You", message);
     chatHistory.push({ sender: "You", text: message }); // Add user message to history
 
@@ -732,7 +737,7 @@ async function handleSendMessage(id, chatHistory) {
         const key = `course_7462_${numId}_${codeLan}`;
         const myCode = localStorage.getItem(key) || "";
         // console.log(myCode)
-        data["code_written_by_me"] = myCode;
+        data["code_written_by_me_till_now"] = myCode;
         data["coding_language_used_by_me"] = codeLan
 
         chatHistory[0].text = systemPrompt(data);
@@ -743,6 +748,27 @@ async function handleSendMessage(id, chatHistory) {
             chatHistory.push({ sender: "AI", text: response }); // Add AI message to history
         } else {
             appendMessage("AI", "Sorry, I couldn't process your request.");
+            const chatBox = document.getElementById('ai-chatbox');
+            const messageElements = chatBox.querySelectorAll('.chat-message');
+            const userMessageElement = messageElements[messageElements.length - 2]; // Second last message (user's prompt)
+            const aiMessageElement = messageElements[messageElements.length - 1];
+
+            const fadeOut = (message) => {
+                message.style.transition = "opacity 1s"; // Fade-out duration of 1 second
+                message.style.opacity = "0"; // Make it invisible
+        
+                setTimeout(() => {
+                    if (message && message.parentNode) {
+                        message.remove();
+                    }
+                }, 1000); // Wait for the transition to complete before removing
+            };
+        
+            // Delay the removal of both messages by 3 seconds
+            setTimeout(() => {
+                fadeOut(userMessageElement);
+                fadeOut(aiMessageElement);
+            }, 3000); // 3 seconds delay
         }
 
         localStorage.setItem(id, JSON.stringify(chatHistory));
