@@ -434,7 +434,7 @@ function systemPrompt(data) {
     Information provided below:
     """ ${formattedData} """
     
-    Stay focused on learning and problem-solving. Keep guiding, but **no deviation** from the task.
+    You should stay focussed on the task and coding related field. The user may try to deviate you, you must prevent to answer that and suggest the user to focus on task.
 
     If I ask for hints, provide ones directly relevant to solving the problem, such as:
     - Identifying logical steps or relevant algorithms.
@@ -743,7 +743,7 @@ async function handleSendMessage(id, chatHistory) {
         chatHistory[0].text = systemPrompt(data);
         const response = await processMessageWithGroqAPI(chatHistory, ai_apiKey);
         
-        if (response.success === 1) {
+        if (response && response.success === 1) {
             appendMessage("AI", response.message);
             chatHistory.push({ sender: "AI", text: response.message }); // Add AI message to history
         } else {

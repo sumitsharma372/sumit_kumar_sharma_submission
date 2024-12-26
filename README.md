@@ -7,7 +7,7 @@ This is a basic Chrome Extension base template for starting new projects off of 
 - ..
 
 ## Author
-First Last
+Sumit Kumar Sharma
 - [Author Website]()
 - [Author Github]()
 - [Project Repository]()
