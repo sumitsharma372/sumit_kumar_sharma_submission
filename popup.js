@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (apiKey && apiKey.length > 10) {
             chrome.storage.local.set({ az_ai_apikey: apiKey }, () => {
                 const messageContainer = document.querySelector('.success-message');
-                messageContainer.textContent = "API Key saved successfully! You can chat now by clicking the AI Help icon in the bottom left corner.";
+                messageContainer.textContent = "API Key saved! Chat now by clicking the AI Help icon or using the Keyboard shortcut (Alt+A).";
                 messageContainer.style.display = 'block';
                 inputField.value = '';
             });

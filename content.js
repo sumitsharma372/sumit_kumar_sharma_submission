@@ -24,7 +24,19 @@ async function setup() {
         observeThemeChanges();
     }
     injectScript();
+    document.addEventListener('keydown', handleKeyboardShortcut);
 }
+
+function handleKeyboardShortcut(event) {
+    const aiButton = document.getElementById('ai-assistant-button');    
+    if (aiButton && event.altKey && event.key === 'a') {
+        const chatbox = document.getElementById('ai-chatbox');
+        if (!chatbox) {
+            createChatbox();
+        }
+    }
+}
+
 
 function injectScript() {
     const script = document.createElement('script');
@@ -781,6 +793,7 @@ async function createChatbox() {
             
             const clickedOutside = !chatbox.contains(e.target); // Check if click is outside chatbox
             const isSwitchClicked = e.target.closest(".ant-switch.d-flex.mt-1.css-19gw05y"); // Check if the click is on the specific element
+            // const isCodeEditor = e.target.closest(".coding_code_playground_top_container__CzOiz")
             
             if (clickedOutside && !isSwitchClicked) {
                 removeChatbox(); // Close the chatbox if the click is outside and not on the switch
