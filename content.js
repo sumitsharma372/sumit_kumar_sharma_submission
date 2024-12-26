@@ -56,7 +56,7 @@ function observeThemeChanges() {
     const themeSwitchElement = document.getElementsByClassName('ant-switch d-flex mt-1 css-19gw05y')[0];
     
     if (!themeSwitchElement) {
-        console.error("Theme switch element not found!");
+        // console.error("Theme switch element not found!");
         return;
     }
 
@@ -219,6 +219,9 @@ function updateChatboxTheme(isDarkTheme) {
         btn.style.color = isDarkTheme ? '#ffffff' : '#333';
         btn.style.backgroundColor = isDarkTheme ? '#4a4a4a' : '#f0f0f0';
     }) 
+
+    const closeBtn = document.getElementById("ai-close-button");
+    closeBtn.style.color = isDarkTheme ? "#4d6182":"#9ee0f7";
 }
 
 
@@ -515,6 +518,32 @@ async function createChatbox() {
 
     dragArea.appendChild(dragImage);
 
+    const closeButton = document.createElement("button");
+    closeButton.id = "ai-close-button";
+    closeButton.textContent = "-"; // Use a minus sign
+    Object.assign(closeButton.style, {
+        position: "absolute",
+        top: "5px",
+        right: "5px",
+        width: "20px",
+        height: "20px",
+        color: darkTheme ? "#4d6182":"#9ee0f7",
+        background: "transparent",
+        border: "none",
+        borderRadius: "50%",
+        fontSize: "16px",
+        fontWeight: "bold",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: "9999",
+    });
+
+    closeButton.addEventListener("click", removeChatbox);
+
+    chatbox.appendChild(closeButton);
+
     // Chat messages container
     const messagesContainer = document.createElement("div");
     messagesContainer.id = "messages-container";
@@ -778,7 +807,7 @@ async function handleSendMessage(id, chatHistory) {
 
         localStorage.setItem(id, JSON.stringify(chatHistory));
     } catch (error) {
-        console.error("Error retrieving API key:", error);
+        // console.error("Error retrieving API key:", error);
         window.alert("Sorry, the API key is missing or invalid.");
     }
 }
