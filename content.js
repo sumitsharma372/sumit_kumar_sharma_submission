@@ -742,12 +742,17 @@ async function handleSendMessage(id, chatHistory) {
 
         chatHistory[0].text = systemPrompt(data);
         const response = await processMessageWithGroqAPI(chatHistory, ai_apiKey);
-
-        if (response) {
-            appendMessage("AI", response);
-            chatHistory.push({ sender: "AI", text: response }); // Add AI message to history
+        
+        if (response.success === 1) {
+            appendMessage("AI", response.message);
+            chatHistory.push({ sender: "AI", text: response.message }); // Add AI message to history
         } else {
-            appendMessage("AI", "Sorry, I couldn't process your request.");
+            const errMsg = response.message;
+            console.log(errMsg)
+            const match = errMsg.match(/Please.*/);
+            const sentence = match ? match[0] : "";
+            appendMessage("AI", `Sorry, I couldn't process your request. ${sentence}`);
+
             const chatBox = document.getElementById('ai-chatbox');
             const messageElements = chatBox.querySelectorAll('.chat-message');
             const userMessageElement = messageElements[messageElements.length - 2]; // Second last message (user's prompt)
@@ -761,20 +766,20 @@ async function handleSendMessage(id, chatHistory) {
                     if (message && message.parentNode) {
                         message.remove();
                     }
-                }, 1000); // Wait for the transition to complete before removing
+                }, 2000); // Wait for the transition to complete before removing
             };
         
             // Delay the removal of both messages by 3 seconds
             setTimeout(() => {
                 fadeOut(userMessageElement);
                 fadeOut(aiMessageElement);
-            }, 3000); // 3 seconds delay
+            }, 4000); // 3 seconds delay
         }
 
         localStorage.setItem(id, JSON.stringify(chatHistory));
     } catch (error) {
         console.error("Error retrieving API key:", error);
-        appendMessage("AI", "Sorry, the API key is missing or invalid.");
+        window.alert("Sorry, the API key is missing or invalid.");
     }
 }
 
@@ -955,51 +960,46 @@ function scrollToBottom() {
 
 async function processMessageWithGroqAPI(chatHistory, apiKey) {
     try {
-        const maxTokens = 6000;  // Set the token limit
+        const maxTokens = 6000;
 
-        // Function to estimate token count (rough approximation for demonstration)
         const estimateTokens = (text) => {
-            // One common estimate: approximately 3 characters per token (including spaces)
             return Math.ceil(text.length / 3);
         };
 
         let totalTokens = 0;
         let truncatedHistory = [];
 
-        // Create a copy of the chat history to avoid modifying the original
         const modifiedHistory = [...chatHistory];
 
-        // Convert the first message to a system role in the copied history
         if (modifiedHistory.length > 0) {
             modifiedHistory[0] = { ...modifiedHistory[0], role: "system" };
         }
 
-        // Traverse the copied chat history in reverse order, adding messages until the token limit is reached
-        console.log(chatHistory)
+        let systemMessageIncluded = false;
+
         for (let i = modifiedHistory.length - 1; i >= 0; i--) {
             const message = modifiedHistory[i];
             const messageTokens = estimateTokens(message.text);
 
-            // Check if adding this message exceeds the token limit
-            if (totalTokens + messageTokens > maxTokens) {
-                break;  // Stop adding messages if the token limit is exceeded
+            if (message.role === "system" && !systemMessageIncluded) {
+                truncatedHistory.unshift(message);
+                totalTokens += messageTokens;
+                systemMessageIncluded = true;
+            } else if (totalTokens + messageTokens <= maxTokens) {
+                truncatedHistory.unshift(message);
+                totalTokens += messageTokens;
+            } else {
+                break;
             }
-
-            truncatedHistory.unshift(message);  // Add message at the beginning
-            totalTokens += messageTokens;  // Accumulate token count
         }
 
-        // Log the total tokens for debugging
-
-        // Prepare the messages in the format required by Groq API
         const messages = truncatedHistory.map((message) => ({
             role: message.role || (message.sender === "You" ? "user" : "assistant"),
             content: message.text,
         }));
 
-        console.log(messages)
+        // console.log(messages)
 
-        // Make the API request
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: "POST",
             headers: {
@@ -1007,25 +1007,21 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
                 "Authorization": `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: "llama-3.1-70b-versatile",  // Specify the model you want to use
+                model: "llama-3.1-70b-versatile",
                 messages: messages,
             }),
         });
 
-        // Handle errors in the response
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`API returned status ${response.status}:`, errorText);
-            throw new Error(`API returned status ${response.status}`);
+            let errorText = await response.text();
+            errorText = JSON.parse(errorText).error.message;
+            // console.log(`API returned status ${response.status}:`, errorText);
+            return { success: 0, message: `${errorText}` };
         }
-
-        // Parse the response
+        
         const data = await response.json();
-        console.log("Response data:", data);
-
-        // Extract the content from the assistant's response
         const assistantResponse = data.choices?.[0]?.message?.content || "No response received.";
-        return assistantResponse;
+        return { success: 1, message: assistantResponse };        
 
     } catch (error) {
         console.error("Error processing message:", error);
