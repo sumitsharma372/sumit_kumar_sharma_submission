@@ -642,8 +642,21 @@ async function createChatbox() {
     let instructions = systemPrompt(data);
 
     const id = data.id;
-    const temp = localStorage.getItem(id);
-    let chatHistory = temp ? JSON.parse(temp) : [];
+    const storedData = localStorage.getItem(id);
+    let chatHistory = [];
+    let storedTime = 0;
+
+    if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        chatHistory = parsedData.chats || [];
+        storedTime = parsedData.timestamp || 0;
+    }
+
+    const currentTime = new Date().getTime();
+    if (storedTime && currentTime - storedTime > 2 * 24 * 60 * 60 * 1000) {
+        chatHistory = [];
+        localStorage.removeItem(id);
+    }
 
     // Check if chatHistory is empty and set initial messages
     if (chatHistory.length === 0) {
@@ -876,7 +889,11 @@ async function handleSendMessage(id, chatHistory) {
             }, 4000); // 3 seconds delay
         }
 
-        localStorage.setItem(id, JSON.stringify(chatHistory));
+        const dataToStore = {
+            timestamp: new Date().getTime(),
+            chats: chatHistory
+        };
+        localStorage.setItem(id, JSON.stringify(dataToStore));
     } catch (error) {
         // console.error("Error retrieving API key:", error);
         window.alert("Sorry, the API key is missing or invalid.");
