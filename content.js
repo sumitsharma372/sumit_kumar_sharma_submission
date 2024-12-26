@@ -12,7 +12,7 @@ async function setup() {
     addAiButton();  
 
     if (!aiButtonObserver) {
-        console.log("Creating observer for AI button...");
+        // console.log("Creating observer for AI button...");
         aiButtonObserver = new MutationObserver(() => {
             handleRouteChange();
         });
@@ -371,7 +371,7 @@ function handleRouteChange() {
 
     // Check if the route has changed
     if (currentPath !== previousPath) {
-        console.log("Route changed from:", previousPath, "to:", currentPath);
+        // console.log("Route changed from:", previousPath, "to:", currentPath);
         previousPath = currentPath; // Update the previous path
         removeChatbox(); // Close the chatbox only if the route has changed
     }
@@ -662,7 +662,7 @@ async function createChatbox() {
             // Capture data from the API response
             const clonedResponse = response.clone();
             clonedResponse.json().then((data) => {
-                console.log("Captured fetch response:", data);
+                // console.log("Captured fetch response:", data);
                 // Store the intercepted data in Chrome storage
                 chrome.storage.local.set({ apiData: data });
             }).catch(error => {
