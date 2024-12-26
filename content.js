@@ -544,6 +544,64 @@ async function createChatbox() {
 
     chatbox.appendChild(closeButton);
 
+
+    // Add resize handles for resizing the chatbox
+["top", "right", "bottom", "left"].forEach((side) => {
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = `resize-handle resize-${side}`;
+    Object.assign(resizeHandle.style, {
+        position: "absolute",
+        [side]: "-5px",
+        cursor: side.includes("top") || side.includes("bottom") ? "ns-resize" : "ew-resize",
+        ...(side === "top" || side === "bottom"
+            ? { height: "10px", width: "100%" }
+            : { width: "10px", height: "100%" }),
+    });
+
+    // Add resize logic
+    resizeHandle.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = chatbox.offsetWidth;
+        const startHeight = chatbox.offsetHeight;
+        const startLeft = chatbox.offsetLeft;
+        const startTop = chatbox.offsetTop;
+
+        const onMouseMove = (e) => {
+            if (side === "right") {
+                const newWidth = Math.max(300, startWidth + e.clientX - startX);
+                chatbox.style.width = `${newWidth}px`;
+            } else if (side === "left") {
+                const newWidth = Math.max(300, startWidth - (e.clientX - startX));
+                const newLeft = startLeft + (e.clientX - startX);
+                chatbox.style.width = `${newWidth}px`;
+                chatbox.style.left = `${newLeft}px`;
+            } else if (side === "bottom") {
+                const newHeight = Math.max(400, startHeight + e.clientY - startY);
+                chatbox.style.height = `${newHeight}px`;
+            } else if (side === "top") {
+                const newHeight = Math.max(400, startHeight - (e.clientY - startY));
+                const newTop = startTop + (e.clientY - startY);
+                chatbox.style.height = `${newHeight}px`;
+                chatbox.style.top = `${newTop}px`;
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    });
+
+    chatbox.appendChild(resizeHandle);
+});
+
+
+
     // Chat messages container
     const messagesContainer = document.createElement("div");
     messagesContainer.id = "messages-container";
