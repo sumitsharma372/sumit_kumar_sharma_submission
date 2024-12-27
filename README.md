@@ -39,4 +39,4 @@ For questions or support, feel free to open an issue or contact the maintainer v
 
 ---
 
-We hope this AI assistant enhances your coding experience on `maang.in`. Happy coding!
+I hope this AI assistant enhances your coding experience on `maang.in`. Happy coding!
