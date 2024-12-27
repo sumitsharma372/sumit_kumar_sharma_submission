@@ -820,6 +820,7 @@ async function createChatbox() {
 
     updateChatboxTheme(darkTheme);
     scrollToBottom();
+    input.focus();
 }
 
 
