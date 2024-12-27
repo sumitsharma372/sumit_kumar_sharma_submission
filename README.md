@@ -1,4 +1,4 @@
-# AI Coding Assistant for Maang.in
+# AI Coding Assistant - Algozenith
 
 ## Overview
 This Chrome extension integrates an AI assistant directly into the `maang.in` Algozenith coding platform to help users solve coding problems effectively. It guides users by providing hints, suggesting solution approaches, and assisting in logic-building for specific coding challenges.
