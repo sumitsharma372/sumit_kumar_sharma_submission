@@ -11,6 +11,7 @@ This Chrome extension integrates an AI assistant directly into the `maang.in` Al
 - **Customizable Chat Interface**: Features a resizable and draggable chatbox, allowing users to adjust its position and size as needed.
 - **Persistent Context Management**: Retains chat history for each problem to maintain context. Automatically clears inactive chats after two days, enabling a fresh start for new problem-solving sessions.
 - **Keyboard Shortcut for Quick Access**: Includes a convenient shortcut (`Alt+A`) to instantly open the AI chatbox.
+- **Code Copy Feature**: A copy button is available on code blocks, allowing users to copy code effortlessly for reuse and testing.
 
 ## Technology Stack
 - **Manifest Version**: MV3 (Manifest Version 3)
