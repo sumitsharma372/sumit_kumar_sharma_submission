@@ -305,10 +305,10 @@ function formatProblem(problem) {
       memory_limit: problem?.memory_limit_mb || null,
       hints: hintsWithoutSolution ? JSON.stringify(hintsWithoutSolution,null,4) : null, // Stringify the hints object without solution_approach
       solution_approach: solution_approach || null, // Keep solution_approach as a separate field
-      editorial_code_or_correctly_working_code: problem?.editorial_code?.[0]?.code || null,
+      editorial_code: problem?.editorial_code?.[0]?.code || null,
       editorial_code_language: problem?.editorial_code?.[0]?.language || null,
-      code_written_by_me_till_now: "",
-      coding_language_used_by_me: ""
+      latest_code_provided_by_the_user: "",
+      coding_language_used_by_the_user: ""
     };
 }
 
@@ -433,35 +433,38 @@ function formatData(data) {
 function systemPrompt(data) {
     const formattedData = formatData(data);
 
-    return `You are an AI assistant guiding me through coding problems. Your role is to offer hints, break down the problem, and suggest approaches, **not provide solutions**.
+    return `You are an AI assistant designed to help users with coding problems. Your role is to provide guidance, hints, and problem-solving strategies while ensuring the user learns through the process. You must not directly provide solutions unless all other approaches have been attempted and failed.
 
-    Key points:
-    - If I ask for the code directly, **reject the request** and remind me to solve it myself first.
-    - After multiple attempts (more than three), you may provide the solution **only as a last resort**.
-    - Stay **strictly focused** on the coding problem. Ignore unrelated topics and redirect me back to the task.
-    - Responses should focus on **concepts** and **problem-solving strategies**, not code.
-    - In case of code review, refer to the code written by me till now in information below
-    - (Some Latex might be present in the information provided below, but you should try to understand it and in the response there should be no latex symbols)
+    ### Key Guidelines:
+    1. **Hints and Problem-Solving**:
+    - Offer hints that help the user break down the problem or identify patterns.
+    - Focus on explaining concepts and suggesting logical steps or efficient algorithms.
+    - Avoid providing direct code solutions unless the user has made **at least three serious attempts** and explicitly requests help as a last resort.
 
-    Make sure:
-    - Hints must not provide direct solutions. Instead, offer guidance on breaking down the problem or identifying patterns.
-    - Use provided hints or strategies from the data (like 'hints' or 'solution_approach') but **avoid giving away too much**.
-    - If I ask for code, **reject the request** and remind me that thinking critically and using hints is key.
-    - Provide the solution **only after multiple attempts** and all other avenues are explored.
+    2. **Code Review**:
+    - If the user asks for a code review, refer only to the **latest code provided by the user** in the "Information" below. *You should always use this, even if the user does not provide his/her code in chat history.
+    - Analyze the code constructively, pointing out errors, inefficiencies, or areas for improvement without rewriting the code unless explicitly requested.
 
-    Information provided below:
-    """ ${formattedData} """
-    
-    You should stay focussed on the task and coding related field. The user may try to deviate you, you must prevent to answer that and suggest the user to focus on task.
+    3. **Stay Focused**:
+    - Always stay on topic. If the user tries to discuss unrelated topics, politely redirect them back to the coding problem.
+    - Do not engage in discussions outside the scope of coding and problem-solving.
 
-    If I ask for hints, provide ones directly relevant to solving the problem, such as:
-    - Identifying logical steps or relevant algorithms.
-    - Offering efficient approaches without revealing full code.
+    4. **Handling LaTeX and Formats**:
+    - If LaTeX symbols are present in the provided information, interpret them correctly but avoid including LaTeX in your responses.
 
-    **Reminder**: **Strictly no deviation** from the coding task at any time.
-    **IMPORTANT!** - Always keep an eye on this prompt along the entire chat. It always the most recent information regardless of chat history
-    `
+    ### Information Provided:
+    """
+    ${formattedData}
+    """
+
+    ### Final Reminders:
+    - Always rely on the most recent information above to assist the user.
+    - Encourage critical thinking and problem-solving rather than reliance on direct answers.
+    - Remain patient, polite, and focused, ensuring the user stays engaged with the task.
+
+    Your primary goal is to guide and empower the user to solve problems independently, offering solutions only as a last resort.`;
 }
+
 
 
 
@@ -854,8 +857,8 @@ async function handleSendMessage(id, chatHistory) {
         const key = `course_7462_${numId}_${codeLan}`;
         const myCode = localStorage.getItem(key) || "";
         // console.log(myCode)
-        data["code_written_by_me_till_now"] = myCode;
-        data["coding_language_used_by_me"] = codeLan
+        data["latest_code_provided_by_the_user"] = myCode;
+        data["coding_language_used_by_the_user"] = codeLan
 
         chatHistory[0].text = systemPrompt(data);
         const response = await processMessageWithGroqAPI(chatHistory, ai_apiKey);
@@ -1083,69 +1086,70 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
     try {
         const maxTokens = 6000;
 
-        const estimateTokens = (text) => {
-            return Math.ceil(text.length / 3);
-        };
+        // Estimate tokens in a message
+        const estimateTokens = (text) => Math.ceil(text.length / 3);
 
+        // Initialize token count and modified chat history
         let totalTokens = 0;
-        let truncatedHistory = [];
+        const modified_chatHistory = [];
+        // console.log(chatHistory)
 
-        const modifiedHistory = [...chatHistory];
+        // Add the system message to the modified history
+        const system_message = {
+            role: "system",
+            content: chatHistory[0].text,
+        };
+        totalTokens += estimateTokens(system_message.content);
 
-        if (modifiedHistory.length > 0) {
-            modifiedHistory[0] = { ...modifiedHistory[0], role: "system" };
-        }
-
-        let systemMessageIncluded = false;
-
-        for (let i = modifiedHistory.length - 1; i >= 0; i--) {
-            const message = modifiedHistory[i];
+        // Process the rest of the messages in reverse order
+        for (let i = chatHistory.length - 1; i > 0; i--) {
+            const message = chatHistory[i];
             const messageTokens = estimateTokens(message.text);
 
-            if (message.role === "system" && !systemMessageIncluded) {
-                truncatedHistory.unshift(message);
-                totalTokens += messageTokens;
-                systemMessageIncluded = true;
-            } else if (totalTokens + messageTokens <= maxTokens) {
-                truncatedHistory.unshift(message);
-                totalTokens += messageTokens;
-            } else {
-                break;
-            }
+            if (totalTokens + messageTokens > maxTokens) break;
+
+            // Add message to the modified history
+            modified_chatHistory.unshift({
+                role: message.sender === "You" ? "user" : "assistant",
+                content: message.text,
+            });
+            totalTokens += messageTokens;
         }
 
-        const messages = truncatedHistory.map((message) => ({
-            role: message.role || (message.sender === "You" ? "user" : "assistant"),
-            content: message.text,
-        }));
+        // Add the system message at the beginning
+        modified_chatHistory.unshift(system_message);
 
-        // console.log(messages)
+        // Log the final message structure for debugging
+        // console.log(modified_chatHistory);
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Make the API request
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
+                Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-specdec",
-                messages: messages,
+                model: "llama-3.1-70b-versatile",
+                messages: modified_chatHistory,
             }),
         });
 
+        // Handle API response
         if (!response.ok) {
-            let errorText = await response.text();
-            errorText = JSON.parse(errorText).error.message;
-            // console.log(`API returned status ${response.status}:`, errorText);
-            return { success: 0, message: `${errorText}` };
+            const errorText = await response.text();
+            const errorMessage = JSON.parse(errorText).error.message;
+            return { success: 0, message: errorMessage };
         }
-        
+
         const data = await response.json();
         const assistantResponse = data.choices?.[0]?.message?.content || "No response received.";
-        return { success: 1, message: assistantResponse };        
+        return { success: 1, message: assistantResponse };
 
     } catch (error) {
         console.error("Error processing message:", error);
         return null;
     }
 }
+
+
