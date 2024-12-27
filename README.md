@@ -1,19 +1,22 @@
 # AI Coding Assistant for Maang.in
 
 ## Overview
-This Chrome extension integrates an AI assistant directly into the `maang.in` coding platform to help users solve coding problems effectively. It guides users by providing hints, suggesting solution approaches, and assisting in logic-building for specific coding challenges.
+This Chrome extension integrates an AI assistant directly into the `maang.in` Algozenith coding platform to help users solve coding problems effectively. It guides users by providing hints, suggesting solution approaches, and assisting in logic-building for specific coding challenges.
 
 ## Features
-- **AI Guidance**: Offers step-by-step hints and strategies to tackle coding problems.
-- **Problem Understanding**: Helps break down the problem statement into simpler parts.
-- **Logic Development**: Assists in building the logic for the solution without directly providing the code.
-- **Interactive Chat**: Users can chat with the AI assistant to refine their understanding and approach.
-- **Website Specific**: Tailored to work exclusively with `maang.in` for seamless integration.
+- **Context-Aware AI Guidance**: Provides tailored hints, strategies, and step-by-step guidance to tackle coding challenges effectively.
+- **Comprehensive Problem Analysis**: Breaks down problem statements into simpler, more understandable components to enhance comprehension.
+- **Code Review Assistance**: Tracks the user’s most recently written code and offers constructive feedback for improvement.
+- **Seamless Theme Integration**: Adapts flawlessly to both light and dark themes of the `maang.in` platform, ensuring a consistent visual experience.
+- **Customizable Chat Interface**: Features a resizable and draggable chatbox, allowing users to adjust its position and size as needed.
+- **Persistent Context Management**: Retains chat history for each problem to maintain context. Automatically clears inactive chats after two days, enabling a fresh start for new problem-solving sessions.
+- **Keyboard Shortcut for Quick Access**: Includes a convenient shortcut (`Alt+A`) to instantly open the AI chatbox.
 
 ## Technology Stack
 - **Manifest Version**: MV3 (Manifest Version 3)
 - **Frontend**: HTML, CSS, JavaScript
-- **Backend AI**: Llama API
+- **Model**: llama-3.1-70b-versatile
+- **API Platform**: Grog
 
 ## Installation
 1. Clone or download the repository.
@@ -23,22 +26,10 @@ This Chrome extension integrates an AI assistant directly into the `maang.in` co
 5. The extension will appear in your extensions bar.
 
 ## Usage
-1. Navigate to `maang.in`.
-2. Click on the extension icon to open the AI assistant.
-3. Start a chat with the assistant to get hints, solution approaches, and logic-building support for the coding problems on `maang.in`.
+1. Navigate to any problem page of `maang.in`. The AI assistant button will appear on the buttom left corner.
+2. Click on the extension icon and enter the API Key. It will get saved in your browser.
+4. Start a chat by clicking the button or using "Alt+A" shortcut  to get hints, solution approaches, and logic-building support for the coding problems.
 
-## How It Works
-- When the user interacts with the assistant, the extension sends queries to the Llama API.
-- The AI assistant provides contextual help based on the coding problem without directly offering the solution unless explicitly requested.
-- Designed to foster learning and problem-solving skills.
-
-## Contributing
-Contributions are welcome! Please follow these steps:
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature-name`.
-3. Commit your changes: `git commit -m 'Add feature-name'`.
-4. Push to the branch: `git push origin feature-name`.
-5. Submit a pull request.
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
