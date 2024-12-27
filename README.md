@@ -3,11 +3,10 @@
 ## Overview
 This Chrome extension integrates an AI assistant directly into the `maang.in` Algozenith coding platform to help users solve coding problems effectively. It guides users by providing hints, suggesting solution approaches, and assisting in logic-building for specific coding challenges.
 
-<div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-  <img src="readme_images/chatbox_light.png" alt="Image 1" style="width: 40%;"/>
-  <img src="readme_images/chatbox_dark.png" alt="Image 2" style="width: 40%;"/>
+<div style="display: flex; justify-content: space-between;">
+  <img src="readme_images/chatbox_light.png" alt="Image 1" width="48%" />
+  <img src="readme_images/chatbox_dark.png" alt="Image 2" width="48%" />
 </div>
-
 
 ## Features
 - **Context-Aware AI Guidance**: Provides tailored hints, strategies, and step-by-step guidance to tackle coding challenges effectively.
