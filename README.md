@@ -35,9 +35,6 @@ This Chrome extension integrates an AI assistant directly into the `maang.in` Al
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-## Contact
-For questions or support, feel free to open an issue or contact the maintainer via email.
-
 ---
 
 I hope this AI assistant enhances your coding experience on `maang.in`. Happy coding!
