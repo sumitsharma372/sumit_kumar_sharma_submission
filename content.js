@@ -432,21 +432,22 @@ function formatData(data) {
 function systemPrompt(data) {
     const formattedData = formatData(data);
 
-    return `You are an AI assistant designed to help users with coding problems. Your role is to provide guidance, hints, and problem-solving strategies while ensuring the user learns through the process. You must **never** provide code directly unless the user has clearly asked for it **after exhausting all other approaches**.
+    return `You are an AI assistant designed to help users with coding problems. Your role is to provide guidance, hints, and problem-solving strategies while ensuring the user learns through the process. You must **never** provide entire code directly. *Always remember you are a mentor, not a code provider*
 
     ### Key Guidelines:
     1. **Hints and Problem-Solving**:
-    - Offer hints that help the user break down the problem or identify patterns. **Never provide code directly**, especially in the early stages of the conversation.
+    - Offer hints that help the user break down the problem or identify patterns. **Never provide entire code directly**, especially in the early stages of the conversation.
     - Focus on explaining concepts and suggesting logical steps or efficient algorithms, rather than providing code directly.
     - If the user explicitly requests help after trying multiple solutions, only then can code be provided, but only if **absolutely necessary**.
+    - Remember your main role is help user in enhancing the thinking process and logic build up. You can also ask few questions to the user to think.
 
     2. **Code Review**:
-    - If the user asks for a code review, refer only to the **latest code provided by the user** in the "Information" below. *You should always use this, even if the user does not provide their code in chat history.
+    - If the user asks for a code review, refer only to the **latest code provided by the user** in the "Information" below. *You should always use this, even if the user does not provide their code in chat history. *You should not check for recent conversation if user asks for code review*. Directly jump to first message, you will get the code.
     - Analyze the code constructively, pointing out errors, inefficiencies, or areas for improvement **without rewriting the code unless explicitly requested**.
 
     3. **Stay Focused**:
     - Always stay on topic. If the user asks about unrelated topics (such as movies or anything non-coding related), **do not provide any responses related to those topics**. Politely and firmly redirect the conversation back to the coding problem. 
-    - Do not engage in discussions outside the scope of coding and problem-solving.
+    - Do not engage in discussions outside the scope of coding and problem-solving. Your response should be around programming and coding knowledge. Never go out of field.
 
     4. **Handling LaTeX and Formats**:
     - If LaTeX symbols are present in the provided information, interpret them correctly but avoid including LaTeX in your responses.
@@ -459,14 +460,10 @@ function systemPrompt(data) {
     ### Final Reminders:
     - Always rely on the most recent information above to assist the user.
     - Encourage critical thinking and problem-solving rather than reliance on direct answers.
-    - Remain patient, polite, and focused, ensuring the user stays engaged with the task.
+    - Remain patient, polite, and focused, ensuring the user stays engaged with the task. *Make the chat interactive*
     - **Do not engage in or provide responses to any non-coding topics under any circumstances**.
     `;
 }
-
-
-
-
 
 
 let clickListenerAdded = false;
@@ -869,7 +866,7 @@ async function handleSendMessage(id, chatHistory) {
         const numId = data.id.split('-').pop();
         const codeLan = document.getElementsByClassName('coding_select__UjxFb')[0].textContent
         const key = findKey(numId,codeLan);
-        console.log(key);
+        // console.log(key);
         const myCode = localStorage.getItem(key) || "";
         // console.log(myCode)
         data["latest_code_provided_by_the_user"] = myCode;
@@ -883,7 +880,7 @@ async function handleSendMessage(id, chatHistory) {
             chatHistory.push({ sender: "AI", text: response.message }); // Add AI message to history
         } else {
             const errMsg = response.message;
-            console.log(errMsg)
+            // console.log(errMsg)
             const match = errMsg.match(/Please.*/);
             const sentence = match ? match[0] : "";
             appendMessage("AI", `Sorry, I couldn't process your request. ${sentence}`);
@@ -993,8 +990,8 @@ function appendMessage(sender, message, container = null) {
                 // Wrap the <pre> element in a container
                 const wrapper = document.createElement("div");
                 wrapper.style.position = "relative"; // Make this container the positioning context
-                wrapper.style.width = "100%"; // Ensure it takes the full width
-                wrapper.style.marginBottom = "20px"; // Add spacing for better layout
+                wrapper.style.width = "100%"; 
+                wrapper.style.marginBottom = "20px"; 
             
                 parentPre.parentElement.insertBefore(wrapper, parentPre);
             
@@ -1169,7 +1166,7 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
 
         // Add the system message at the beginning
         modified_chatHistory.unshift(system_message);
-        console.log(modified_chatHistory)
+        // console.log(modified_chatHistory)
 
         // Log the final message structure for debugging
         // console.log(modified_chatHistory);
