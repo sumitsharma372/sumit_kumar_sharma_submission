@@ -15,7 +15,8 @@
       ],
       "js": [
         "content.js",
-        "highlight.min.js"
+        "highlight.min.js",
+        "marked.min.js"
       ],
       "css": ["default.min.css"]
     }

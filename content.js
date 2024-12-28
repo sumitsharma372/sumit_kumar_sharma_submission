@@ -197,10 +197,11 @@ function updateChatboxTheme(isDarkTheme) {
         pre.style.color = isDarkTheme ? '#f1f1f1' : '#000000';
     });
 
-    const codeElements = chatbox.querySelectorAll('code');
+    const codeElements = chatbox.querySelectorAll('code:not(pre code)');
     codeElements.forEach((code) => {
         code.style.backgroundColor = isDarkTheme ? '#2B384E' : '#f5f5f5';
     });
+    
 
     let styleSheet = document.getElementById("scrollbar-styles");
 
@@ -216,12 +217,13 @@ function updateChatboxTheme(isDarkTheme) {
     document.head.appendChild(styleSheet);
 
     const codeLanguage = document.querySelectorAll('.code-language');
-    preElements.forEach((codeLan) => {
-        // codeLan.style.backgroundColor = isDarkTheme ? '#2E3440' : '#f5f5f5';
-        codeLan.style.color = isDarkTheme ? '#a1b5d4' : '#404d61';
+    codeLanguage.forEach((codeLan) => {
+        console.log('Hello'); // Check if this logs for each element
+        codeLan.style.color = isDarkTheme ? "#E9E9EB" : "#2A2E34";
+        codeLan.style.backgroundColor = isDarkTheme ? "#3d4b63" : "#f0f0f0";
     });
 
-    const copyBtns = document.querySelectorAll('.copy-button');
+    const copyBtns = document.querySelectorAll('.copy-button-chatbox');
     copyBtns.forEach((btn) => {
         btn.style.color = isDarkTheme ? '#ffffff' : '#333';
         btn.style.backgroundColor = isDarkTheme ? '#4a4a4a' : '#f0f0f0';
@@ -364,7 +366,7 @@ function addAiButton() {
         padding: "0",
         border: "none",
         cursor: "pointer",
-        zIndex: "10000",
+        zIndex: "110",
     });
 
     assistantButton.addEventListener("click", toggleChatbox);
@@ -431,20 +433,20 @@ function formatData(data) {
 function systemPrompt(data) {
     const formattedData = formatData(data);
 
-    return `You are an AI assistant designed to help users with coding problems. Your role is to provide guidance, hints, and problem-solving strategies while ensuring the user learns through the process. You must not directly provide solutions unless all other approaches have been attempted and failed.
+    return `You are an AI assistant designed to help users with coding problems. Your role is to provide guidance, hints, and problem-solving strategies while ensuring the user learns through the process. You must **never** provide code directly unless the user has clearly asked for it **after exhausting all other approaches**.
 
     ### Key Guidelines:
     1. **Hints and Problem-Solving**:
-    - Offer hints that help the user break down the problem or identify patterns. *Never Provide code directly*. Your focus should be logic building.
+    - Offer hints that help the user break down the problem or identify patterns. **Never provide code directly**, especially in the early stages of the conversation.
     - Focus on explaining concepts and suggesting logical steps or efficient algorithms, rather than providing code directly.
-    - Avoid providing direct code solutions unless the user has made **at least three serious attempts** and explicitly requests help as a last resort.
+    - If the user explicitly requests help after trying multiple solutions, only then can code be provided, but only if **absolutely necessary**.
 
     2. **Code Review**:
-    - If the user asks for a code review, refer only to the **latest code provided by the user** in the "Information" below. *You should always use this, even if the user does not provide his/her code in chat history.
-    - Analyze the code constructively, pointing out errors, inefficiencies, or areas for improvement without rewriting the code unless explicitly requested.
+    - If the user asks for a code review, refer only to the **latest code provided by the user** in the "Information" below. *You should always use this, even if the user does not provide their code in chat history.
+    - Analyze the code constructively, pointing out errors, inefficiencies, or areas for improvement **without rewriting the code unless explicitly requested**.
 
     3. **Stay Focused**:
-    - Always stay on topic. If the user tries to discuss unrelated topics, politely redirect them back to the coding problem.
+    - Always stay on topic. If the user asks about unrelated topics (such as movies or anything non-coding related), **do not provide any responses related to those topics**. Politely and firmly redirect the conversation back to the coding problem. 
     - Do not engage in discussions outside the scope of coding and problem-solving.
 
     4. **Handling LaTeX and Formats**:
@@ -459,9 +461,11 @@ function systemPrompt(data) {
     - Always rely on the most recent information above to assist the user.
     - Encourage critical thinking and problem-solving rather than reliance on direct answers.
     - Remain patient, polite, and focused, ensuring the user stays engaged with the task.
-
-    Your primary goal is to guide and empower the user to solve problems independently, offering solutions only as a last resort.`;
+    - **Do not engage in or provide responses to any non-coding topics under any circumstances**.
+    `;
 }
+
+
 
 
 
@@ -504,7 +508,7 @@ async function createChatbox() {
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
         display: "flex",
         flexDirection: "column",
-        zIndex: "10001",
+        zIndex: "100",
     });
 
     // Top-right corner draggable area
@@ -553,7 +557,7 @@ async function createChatbox() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: "9999",
+        zIndex: "105",
     });
 
     closeButton.addEventListener("click", removeChatbox);
@@ -910,9 +914,9 @@ function appendMessage(sender, message, container = null) {
     const messagesContainer = container || document.getElementById('messages-container');
     const messageDiv = document.createElement("div");
 
-
     const isDarkTheme = getDarkTheme();
     const themeColors = isDarkTheme ? darkThemeColors : lightThemeColors;
+    
     function escapeHtml(str) {
         return str.replace(/[&<>"']/g, (char) => {
             switch (char) {
@@ -932,108 +936,119 @@ function appendMessage(sender, message, container = null) {
     if (sender === "You") {
         message = escapeHtml(message);
         message = message.replace(/```([^`]+)```/g, (match, codeBlock) => {
-            // const escapedCode = escapeHtml(codeBlock);
             return `<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${codeBlock}</pre>`;
         });
 
-        // message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
-        //     const escapedCode = escapeHtml(inlineCode);
-        //     return `<code style="background-color: ${isDarkTheme ? '#2B384E' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
-        // });
-
-        // Handle line breaks for "You" (newlines to <br> tags)
         message = message.replace(/\n/g, '<br>');
         
     } else {
-        message = message.replace(/```(\w+)\s*([\s\S]+?)```/g, (match, language, codeBlock) => {
-            const highlightedCode = hljs.highlightAuto(codeBlock).value;
-            const languageLabel = `<div class="code-language" style="margin-bottom: 5px; margin-top: 10px; padding-left: 3px; color: ${isDarkTheme ? '#a1b5d4' : '#404d61'};">${language}</div>`;
-            
-            // Create a copy button with a data attribute holding the raw code
-            const copyButton = `<button class="copy-button" data-codeblock="${encodeURIComponent(codeBlock)}" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: ${isDarkTheme ? '#4a4a4a' : '#f0f0f0'}; border: none; color: ${isDarkTheme ? '#ffffff' : '#333'}; cursor: pointer; border-radius: 5px;">Copy</button>`;
-            
-            const codeContainer = `<div class="code-container" style="position: relative; margin-bottom: 20px;">${languageLabel}<pre style="${codeBlockStyle} padding: 10px; border-radius: 5px;">${highlightedCode}</pre>${copyButton}</div>`;
-            
-            return codeContainer;
+        marked.setOptions({
+            highlight: (code, language) => {
+                return language && hljs.getLanguage(language)
+                    ? hljs.highlight(code, { language }).value
+                    : hljs.highlightAuto(code).value;
+            },
         });
+    
+        const renderedHTML = marked(message);
+        const container = document.createElement("div");
+        container.innerHTML = renderedHTML;
         
-        document.addEventListener('click', function (event) {
-            if (event.target.classList.contains('copy-button')) {
-                // Retrieve the raw code from the data attribute
-                const codeBlock = decodeURIComponent(event.target.getAttribute('data-codeblock'));
-                
-                // Create a temporary textarea element to copy the raw code
-                const textArea = document.createElement('textarea');
-                textArea.value = codeBlock;  // Use the codeBlock variable for copying
-                document.body.appendChild(textArea);
-        
-                textArea.select();
-                document.execCommand('copy');
-        
-                document.body.removeChild(textArea);
-        
-                if (!event.target.classList.contains('copied')) {
-                    event.target.classList.add('copied');
-                    event.target.textContent = 'Copied!';
-                    setTimeout(() => {
-                        event.target.textContent = 'Copy';
-                        event.target.classList.remove('copied');
-                    }, 1500);
+        container.querySelectorAll("pre").forEach((codeBlock) => {
+            const parentPre = codeBlock;
+            parentPre.style.position = "relative";
+            parentPre.style.marginBottom = "20px";
+            parentPre.style.zIndex = "115"; 
+            parentPre.style.webkitOverflowScrolling = "touch";
+            parentPre.style.scrollbarWidth = "none";
+            parentPre.style.overflow = "auto";
+            parentPre.style.msOverflowStyle = "none";
+            parentPre.style.setProperty("::-webkit-scrollbar", "none");
+            parentPre.style.borderRadius = "7px";
+            let language = '';
+
+            const codeElement = parentPre.querySelector("code");
+            if (codeElement) {
+                codeElement.style.cssText = 'background: transparent !important;';
+                if (codeElement.classList.length > 0 && codeElement.classList[0].startsWith('lang-')) {
+                    language = codeElement.classList[0].split('-')[1];  // Get the part after "lang_"
                 }
             }
+
+            if (language) {
+                console.log(language);
+            
+                // Wrap the <pre> element in a container
+                const wrapper = document.createElement("div");
+                wrapper.style.position = "relative"; // Make this container the positioning context
+                wrapper.style.width = "100%"; // Ensure it takes the full width
+                wrapper.style.marginBottom = "20px"; // Add spacing for better layout
+            
+                parentPre.parentElement.insertBefore(wrapper, parentPre);
+            
+                const languageLabel = document.createElement("div");
+                languageLabel.classList.add("code-language");
+                languageLabel.textContent = language.toLowerCase(); // Display the language in uppercase
+                languageLabel.style.cssText = `
+                    display: inline-block; /* Ensure width fits the text content */
+                    font-size: 12px;
+                    color: ${isDarkTheme ? "#E9E9EB" : "#2A2E34"};
+                    left: 10px; /* Slightly offset for better alignment */
+                    background-color: ${isDarkTheme ? "#3d4b63" : "#f0f0f0"};
+                    padding: 2px 7px;
+                    border-radius: 3px;
+                    z-index: 120;
+                `;
+
+            
+                // Add the label to the wrapper
+                wrapper.appendChild(languageLabel);
+                wrapper.appendChild(parentPre);
+
+                wrapper.style.marginTop = "20px";
+            }
+            
+            
+
+
+            const copyButton = document.createElement("button");
+            copyButton.className = "copy-button-chatbox";
+            copyButton.textContent = "Copy";
+
+            copyButton.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 10px;
+                transform: translateY(-50%);
+                padding: 2px 8px;
+                background-color: ${isDarkTheme ? "#4a4a4a" : "#f0f0f0"};
+                border: none;
+                color: ${isDarkTheme ? "#ffffff" : "#333"};
+                cursor: pointer;
+                border-radius: 3px;
+                font-size: 12px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+                z-index: 120;
+                pointer-events: auto;
+            `;
+
+            parentPre.appendChild(copyButton);
+            parentPre.style.padding = "5px";
+            
         });
-        
-        
-        
 
-
-        message = message.replace(/`([^`]+)`/g, (match, inlineCode) => {
-            const escapedCode = escapeHtml(inlineCode);
-            return `<code class="response-tagline" style="background-color: ${isDarkTheme ? '#283247' : '#f5f5f5'}; padding: 2px 5px; border-radius: 5px;">${escapedCode}</code>`;
-        });
-
-        // Prevent headings inside code blocks by temporarily replacing code block text with placeholders
-        const codeBlockPlaceholders = [];
-        message = message.replace(/<pre[^>]*>(.*?)<\/pre>/gs, (match) => {
-            const placeholder = `{{CODEBLOCK_${codeBlockPlaceholders.length}}}`;
-            codeBlockPlaceholders.push(match);
-            return placeholder;
-        });
-
-        // Format bold text
-        message = message.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-        // Format italic text
-        message = message.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-        // Format headings (exclude #include statements)
-        message = message.replace(/^(#{1,6})\s*(?!include)(.*)$/gm, (match, hash, text) => {
-            const level = hash.length;
-            return `<h${level}>${text}</h${level}>`;
-        });
-
-        // Restore code blocks from placeholders
-        message = message.replace(/{{CODEBLOCK_\d+}}/g, (placeholder) => {
-            const index = placeholder.match(/\d+/)[0];
-            return codeBlockPlaceholders[index];
-        });
-
-        // Handle line breaks (newlines to <br> tags)
-        message = message.replace(/\n/g, '<br>');
+        message = container.innerHTML;
     }
 
-    // Add sender and message content
     messageDiv.innerHTML = `${message}`;
     messageDiv.classList.add('chat-message');
     messageDiv.classList.add(sender === "You" ? 'from-you' : 'from-other');
 
-
-    // Apply styling based on sender
     Object.assign(messageDiv.style, {
         padding: "10px",
         margin: sender === "You" 
-            ? "5px 20px 7px 0"  // 10px margin-bottom when sender is "You"
-            : "5px 0 20px 0",     // 20px margin-bottom when sender is not "You"
+            ? "5px 20px 7px 0"
+            : "5px 0 20px 0",
         borderRadius: "5px",
         backgroundColor: sender === "You" ? themeColors.messageYouBg : themeColors.messageAIbg,
         color: isDarkTheme ? "#E9E9EB" : "#2A2E34",
@@ -1042,8 +1057,34 @@ function appendMessage(sender, message, container = null) {
     });
 
     messagesContainer.appendChild(messageDiv);
-    scrollToBottom()// Scroll to bottom
+    scrollToBottom();
+
+    // Event delegation for copy button
+    messagesContainer.addEventListener("click", function(e) {
+        if (e.target && e.target.classList.contains("copy-button-chatbox")) {
+            const preElement = e.target.closest("pre");
+    
+            // Clone the <pre> element and remove the copy button
+            const codeClone = preElement.cloneNode(true);
+            const button = codeClone.querySelector(".copy-button-chatbox");
+            if (button) {
+                button.remove(); // Remove the copy button from the cloned element
+            }
+    
+            const codeContent = codeClone.innerText; // Get the text without the button
+            navigator.clipboard.writeText(codeContent).then(() => {
+                e.target.textContent = "Copied!";
+                setTimeout(() => {
+                    e.target.textContent = "Copy";
+                }, 1500);
+            }).catch(err => console.error('Failed to copy text: ', err));
+        }
+    });
+    
+    
+
 }
+
 
 
 function scrollToBottom() {
