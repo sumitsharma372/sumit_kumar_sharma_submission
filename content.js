@@ -12,7 +12,6 @@ async function setup() {
     addAiButton();  
 
     if (!aiButtonObserver) {
-        // console.log("Creating observer for AI button...");
         aiButtonObserver = new MutationObserver(() => {
             handleRouteChange();
         });
@@ -20,7 +19,6 @@ async function setup() {
     }
 
     if (!themeObserver) {
-        // console.log("Creating observer for theme changes...");
         observeThemeChanges();
     }
     injectScript();
@@ -40,7 +38,7 @@ function handleKeyboardShortcut(event) {
 
 function injectScript() {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('inject.js'); // Load the `inject.js` file from the extension
+    script.src = chrome.runtime.getURL('inject.js');
     script.onload = function () {
         this.remove(); // Clean up the script element after execution
     };
@@ -61,29 +59,34 @@ function getApiKey() {
 
 const drag_white = chrome.runtime.getURL("assets/drag_white.png"), drag = chrome.runtime.getURL("assets/drag.png");
 const icon_light = chrome.runtime.getURL("assets/icon_light.png"), icon_dark = chrome.runtime.getURL("assets/icon_dark.png");
-const send_light = chrome.runtime.getURL("assets/send_light.png");// icon_dark = chrome.runtime.getURL("assets/icon_dark.png");
+const send_light = chrome.runtime.getURL("assets/send_light.png");
 
 
 function observeThemeChanges() {
     const themeSwitchElement = document.getElementsByClassName('ant-switch d-flex mt-1 css-19gw05y')[0];
     
     if (!themeSwitchElement) {
-        // console.error("Theme switch element not found!");
         return;
     }
 
-    // console.log("Theme Element found");
-
-    // Disconnect the existing observer if it exists
     if (themeObserver) {
         themeObserver.disconnect();
     }
 
-    // Create a new MutationObserver to detect changes in the class list
+    const isDarkTheme = themeSwitchElement.classList.contains('ant-switch-checked');
+    const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
+    if(aiButtonImg){
+        aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
+    }
+
     themeObserver = new MutationObserver(() => {
         const isDarkTheme = themeSwitchElement.classList.contains('ant-switch-checked');
-        // console.log("Theme changed:", isDarkTheme ? "Dark" : "Light");
         updateChatboxTheme(isDarkTheme);
+        const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
+        if(aiButtonImg){
+            aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
+        }
+
     });
 
     themeObserver.observe(themeSwitchElement, {
@@ -91,9 +94,7 @@ function observeThemeChanges() {
         attributeFilter: ['class'],
     });
 
-    // Initialize theme state immediately
     const isDarkThemeInitial = themeSwitchElement.classList.contains('ant-switch-checked');
-    // console.log("Initial Theme:", isDarkThemeInitial ? "Dark" : "Light");
     updateChatboxTheme(isDarkThemeInitial);
 }
 
@@ -200,9 +201,6 @@ function updateChatboxTheme(isDarkTheme) {
     codeElements.forEach((code) => {
         code.style.backgroundColor = isDarkTheme ? '#2B384E' : '#f5f5f5';
     });
-
-    const aiButtonImg = document.getElementById('ai-assistant-button').querySelector('img');
-    aiButtonImg.src = isDarkTheme ? icon_dark : icon_light;
 
     let styleSheet = document.getElementById("scrollbar-styles");
 
@@ -437,7 +435,7 @@ function systemPrompt(data) {
 
     ### Key Guidelines:
     1. **Hints and Problem-Solving**:
-    - Offer hints that help the user break down the problem or identify patterns.
+    - Offer hints that help the user break down the problem or identify patterns. *Never Provide code directly*. Your focus should be logic building.
     - Focus on explaining concepts and suggesting logical steps or efficient algorithms, rather than providing code directly.
     - Avoid providing direct code solutions unless the user has made **at least three serious attempts** and explicitly requests help as a last resort.
 
