@@ -218,7 +218,6 @@ function updateChatboxTheme(isDarkTheme) {
 
     const codeLanguage = document.querySelectorAll('.code-language');
     codeLanguage.forEach((codeLan) => {
-        console.log('Hello'); // Check if this logs for each element
         codeLan.style.color = isDarkTheme ? "#E9E9EB" : "#2A2E34";
         codeLan.style.backgroundColor = isDarkTheme ? "#3d4b63" : "#f0f0f0";
     });
@@ -837,6 +836,19 @@ function removeChatbox() {
     }
 }
 
+
+function findKey(numId, codeLan) {
+    const keys = Object.keys(localStorage);
+    for (let key of keys) {
+      if (key.endsWith(`${numId}_${codeLan}`)) {
+        return key; 
+      }
+    }
+    
+    return null; 
+  }
+
+
 async function handleSendMessage(id, chatHistory) {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
@@ -856,7 +868,8 @@ async function handleSendMessage(id, chatHistory) {
         // console.log(apiKey);
         const numId = data.id.split('-').pop();
         const codeLan = document.getElementsByClassName('coding_select__UjxFb')[0].textContent
-        const key = `course_7462_${numId}_${codeLan}`;
+        const key = findKey(numId,codeLan);
+        console.log(key);
         const myCode = localStorage.getItem(key) || "";
         // console.log(myCode)
         data["latest_code_provided_by_the_user"] = myCode;
@@ -976,7 +989,6 @@ function appendMessage(sender, message, container = null) {
             }
 
             if (language) {
-                console.log(language);
             
                 // Wrap the <pre> element in a container
                 const wrapper = document.createElement("div");
@@ -1157,6 +1169,7 @@ async function processMessageWithGroqAPI(chatHistory, apiKey) {
 
         // Add the system message at the beginning
         modified_chatHistory.unshift(system_message);
+        console.log(modified_chatHistory)
 
         // Log the final message structure for debugging
         // console.log(modified_chatHistory);

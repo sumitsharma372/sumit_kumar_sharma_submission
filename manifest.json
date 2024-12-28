@@ -49,7 +49,7 @@
       "32": "assets/icon.png"
     },
     "default_popup": "popup.html",
-    "default_title": "A tooltip popup description when you hover over the Chrome Extension icon."
+    "default_title": "Your Personal AI Guide to Mastering Code!"
   },
   "host_permissions": [
     "https://cdn.jsdelivr.net/"
