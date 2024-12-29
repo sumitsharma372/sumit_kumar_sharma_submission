@@ -4,7 +4,13 @@
     const originalSend = XMLHttpRequest.prototype.send;
 
     // Hook into the 'open' method
-    XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+    XMLHttpRequest.prototype.open = function (
+        method,
+        url,
+        async,
+        user,
+        password
+    ) {
         this._url = url; // Save URL for later use
         return originalOpen.apply(this, arguments); // Call the original 'open' method
     };
@@ -22,7 +28,9 @@
                 };
 
                 // Dispatch a custom event with the filtered data
-                window.dispatchEvent(new CustomEvent("xhrDataFetched", { detail: data }));
+                window.dispatchEvent(
+                    new CustomEvent("xhrDataFetched", { detail: data })
+                );
             }
         });
 
