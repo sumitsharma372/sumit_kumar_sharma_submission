@@ -631,7 +631,6 @@ async function createChatbox() {
     styleSheet.id = "scrollbar-styles";
 
     styleSheet.textContent = getScrollbarStyles(darkTheme);
-    s;
 
     document.head.appendChild(styleSheet);
 
